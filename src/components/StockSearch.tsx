@@ -85,12 +85,12 @@ const StockSearch: React.FC<StockSearchProps> = ({ onSearch, isLoading }) => {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             onFocus={() => setShowSuggestions(true)}
-            className="rounded-full h-12 pl-4 pr-12 shadow-sm border-gray-200 dark:border-gray-800 focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+            className="rounded-full h-12 pl-4 pr-12 shadow-sm border-gray-600 dark:border-gray-800 bg-gray-800/50 backdrop-blur-md text-white focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
           />
           {input.length > 0 && (
             <button 
               onClick={() => setInput("")}
-              className="absolute right-12 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              className="absolute right-12 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300 transition-colors"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
@@ -101,7 +101,7 @@ const StockSearch: React.FC<StockSearchProps> = ({ onSearch, isLoading }) => {
         <Button 
           onClick={handleSearch}
           disabled={isLoading} 
-          className="h-12 px-6 bg-primary hover:bg-primary/90 text-white rounded-full shadow-sm transition-all"
+          className="h-12 px-6 bg-primary hover:bg-primary/90 text-white rounded-full shadow-md transition-all"
         >
           {isLoading ? (
             <div className="flex items-center">
@@ -120,18 +120,18 @@ const StockSearch: React.FC<StockSearchProps> = ({ onSearch, isLoading }) => {
       {showSuggestions && input.length > 0 && filteredSuggestions.length > 0 && (
         <div 
           ref={suggestionsRef}
-          className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-800 shadow-lg rounded-md overflow-hidden animate-fadeIn border border-gray-200 dark:border-gray-700"
+          className="absolute z-10 mt-1 w-full bg-gray-800 shadow-lg rounded-md overflow-hidden animate-fadeIn border border-gray-700"
         >
           <ul className="py-1">
             {filteredSuggestions.map(stock => (
               <li 
                 key={stock.symbol}
                 onClick={() => handleSuggestionClick(stock.symbol)}
-                className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition-colors"
+                className="px-4 py-2 hover:bg-gray-700 cursor-pointer transition-colors"
               >
                 <div className="flex justify-between items-center">
-                  <span className="font-medium">{stock.symbol}</span>
-                  <span className="text-sm text-gray-500 dark:text-gray-400">{stock.name}</span>
+                  <span className="font-medium text-white">{stock.symbol}</span>
+                  <span className="text-sm text-gray-400">{stock.name}</span>
                 </div>
               </li>
             ))}
@@ -140,7 +140,7 @@ const StockSearch: React.FC<StockSearchProps> = ({ onSearch, isLoading }) => {
       )}
       
       <div className="mt-4">
-        <p className="text-sm text-center text-gray-500 dark:text-gray-400">
+        <p className="text-sm text-center text-gray-400">
           Popular stocks:
         </p>
         <div className="flex flex-wrap justify-center gap-2 mt-2">
@@ -148,7 +148,7 @@ const StockSearch: React.FC<StockSearchProps> = ({ onSearch, isLoading }) => {
             <button
               key={stock.symbol}
               onClick={() => handleSuggestionClick(stock.symbol)}
-              className="px-3 py-1 text-xs rounded-full bg-secondary hover:bg-secondary/80 text-secondary-foreground transition-colors"
+              className="px-3 py-1 text-xs rounded-full bg-gray-800/70 hover:bg-gray-700 text-gray-300 transition-colors border border-gray-700"
             >
               {stock.symbol}
             </button>
