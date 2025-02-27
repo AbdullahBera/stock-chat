@@ -41,7 +41,7 @@ const Index = () => {
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/40 py-8 px-4 md:px-6">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-8 animate-fadeIn">
-          <h1 className="text-3xl md:text-4xl font-bold mb-2">Equity Sentiment Explorer</h1>
+          <h1 className="text-3xl md:text-4xl font-bold mb-2 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">Stock Chat</h1>
           <p className="text-muted-foreground">Search for a stock to analyze sentiment, news, and performance</p>
         </div>
         
@@ -64,7 +64,7 @@ const Index = () => {
           <div className="text-center py-20 text-muted-foreground animate-fadeIn">
             <svg 
               xmlns="http://www.w3.org/2000/svg" 
-              className="h-16 w-16 mx-auto mb-4 text-muted" 
+              className="h-16 w-16 mx-auto mb-4 text-primary/70" 
               fill="none" 
               viewBox="0 0 24 24" 
               stroke="currentColor"
