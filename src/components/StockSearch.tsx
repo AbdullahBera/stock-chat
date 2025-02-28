@@ -21,6 +21,7 @@ const popularStocks = [
 const StockSearch: React.FC<StockSearchProps> = ({ onSearch, isLoading }) => {
   const [input, setInput] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
   const { toast } = useToast();
   const inputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
@@ -64,6 +65,7 @@ const StockSearch: React.FC<StockSearchProps> = ({ onSearch, isLoading }) => {
         !inputRef.current.contains(event.target as Node)
       ) {
         setShowSuggestions(false);
+        setIsFocused(false);
       }
     };
 
@@ -75,8 +77,9 @@ const StockSearch: React.FC<StockSearchProps> = ({ onSearch, isLoading }) => {
 
   return (
     <div className="w-full max-w-md mx-auto mb-6 relative animate-fadeIn">
-      <div className="flex items-center space-x-2">
+      <div className={`flex items-center space-x-2 ${isFocused ? 'scale-[1.02]' : ''} transition-all duration-300`}>
         <div className="relative w-full">
+          <div className={`absolute inset-0 bg-primary/20 dark:bg-primary/30 rounded-full blur-xl transition-opacity duration-300 ${isFocused ? 'opacity-70' : 'opacity-0'}`}></div>
           <Input
             ref={inputRef}
             type="text"
@@ -84,8 +87,11 @@ const StockSearch: React.FC<StockSearchProps> = ({ onSearch, isLoading }) => {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            onFocus={() => setShowSuggestions(true)}
-            className="rounded-full h-12 pl-4 pr-12 shadow-md border-purple-400 dark:border-purple-700 bg-white/10 dark:bg-[#20133A]/80 backdrop-blur-md text-foreground focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+            onFocus={() => {
+              setShowSuggestions(true);
+              setIsFocused(true);
+            }}
+            className={`rounded-full h-12 pl-4 pr-12 shadow-md border-purple-400 dark:border-purple-700 bg-white/10 dark:bg-[#20133A]/80 backdrop-blur-md text-foreground focus:ring-2 focus:ring-primary focus:border-transparent transition-all ${isFocused ? 'shadow-lg shadow-primary/20 dark:shadow-primary/30' : ''}`}
           />
           {input.length > 0 && (
             <button 
@@ -97,11 +103,12 @@ const StockSearch: React.FC<StockSearchProps> = ({ onSearch, isLoading }) => {
               </svg>
             </button>
           )}
+          <div className={`absolute -bottom-1 left-[10%] right-[10%] h-0.5 bg-gradient-to-r from-primary via-accent to-primary rounded-full transform scale-x-0 transition-transform duration-300 origin-left ${isFocused ? 'scale-x-100' : ''}`}></div>
         </div>
         <Button 
           onClick={handleSearch}
           disabled={isLoading} 
-          className="h-12 px-6 bg-gradient-to-r from-primary to-accent hover:opacity-90 text-white rounded-full shadow-lg transition-all"
+          className={`h-12 px-6 bg-gradient-to-r from-primary to-accent hover:opacity-90 text-white rounded-full shadow-lg transition-all ${isFocused ? 'scale-105' : ''}`}
         >
           {isLoading ? (
             <div className="flex items-center">
@@ -148,7 +155,7 @@ const StockSearch: React.FC<StockSearchProps> = ({ onSearch, isLoading }) => {
             <button
               key={stock.symbol}
               onClick={() => handleSuggestionClick(stock.symbol)}
-              className="px-3 py-1 text-xs rounded-full bg-white/5 dark:bg-[#20133A]/50 hover:bg-primary/20 dark:hover:bg-primary/30 text-foreground transition-all border border-purple-200/30 dark:border-purple-700/50 shadow-sm"
+              className="px-3 py-1 text-xs rounded-full bg-white/5 dark:bg-[#20133A]/50 hover:bg-primary/20 dark:hover:bg-primary/30 text-foreground transition-all border border-purple-200/30 dark:border-purple-700/50 shadow-sm hover:scale-105"
             >
               {stock.symbol}
             </button>
