@@ -5,7 +5,7 @@ import StockDetails from "@/components/StockDetails";
 import StockChart from "@/components/StockChart";
 import SentimentAnalysis from "@/components/SentimentAnalysis";
 import NewsCard from "@/components/NewsCard";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from '@/components/ThemeToggle';
 
@@ -43,12 +43,7 @@ const Index = () => {
       // Toast notification removed
     } catch (error) {
       console.error("Error searching for stock:", error);
-      toast({
-        title: "Error",
-        description: "Failed to find stock information",
-        variant: "destructive",
-        duration: 3000,
-      });
+      // Error toast notification removed
     } finally {
       setIsLoading(false);
     }
@@ -56,11 +51,7 @@ const Index = () => {
 
   const clearSearch = () => {
     setSearchedSymbol("");
-    toast({
-      title: "Search Cleared",
-      description: "Return to main page",
-      duration: 2000,
-    });
+    // Toast notification removed
     
     // Go back in history to handle back button properly
     window.history.back();
