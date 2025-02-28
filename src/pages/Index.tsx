@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import StockSearch from "@/components/StockSearch";
 import StockDetails from "@/components/StockDetails";
 import StockChart from "@/components/StockChart";
@@ -13,6 +13,25 @@ const Index = () => {
   const [searchedSymbol, setSearchedSymbol] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const { toast } = useToast();
+
+  // Add history state management for back gesture support
+  useEffect(() => {
+    // Push state to history when a symbol is searched
+    if (searchedSymbol) {
+      window.history.pushState({ symbol: searchedSymbol }, "", "");
+    }
+
+    // Handle back button/gesture
+    const handlePopState = () => {
+      setSearchedSymbol("");
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [searchedSymbol]);
 
   const handleSearch = async (symbol: string) => {
     setIsLoading(true);
@@ -42,6 +61,9 @@ const Index = () => {
       description: "Return to main page",
       duration: 2000,
     });
+    
+    // Go back in history to handle back button properly
+    window.history.back();
   };
 
   return (
@@ -76,7 +98,10 @@ const Index = () => {
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={() => setSearchedSymbol("")}
+              onClick={() => {
+                setSearchedSymbol("");
+                window.history.back();
+              }}
               className="text-xs"
             >
               New Search
