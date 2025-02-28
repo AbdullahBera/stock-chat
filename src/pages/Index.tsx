@@ -102,26 +102,64 @@ const Index = () => {
         )}
         
         {!searchedSymbol && (
-          <div className="text-center py-20 text-muted-foreground animate-fadeIn">
-            <svg 
-              xmlns="http://www.w3.org/2000/svg" 
-              className="h-16 w-16 mx-auto mb-4 text-primary/70" 
-              fill="none" 
-              viewBox="0 0 24 24" 
-              stroke="currentColor"
-            >
-              <path 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                strokeWidth={1.5} 
-                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" 
-              />
-            </svg>
-            <h2 className="text-xl font-medium mb-2 text-foreground">Enter a Stock Symbol to Begin</h2>
-            <p className="max-w-md mx-auto text-muted-foreground">
-              Search for a stock symbol (like AAPL, MSFT, GOOGL) to view detailed information, 
-              sentiment analysis, and recent news.
-            </p>
+          <div className="text-center py-16 animate-fadeIn relative">
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#8B5CF6]/5 to-transparent pointer-events-none"></div>
+            
+            <div className="relative">
+              <div className="w-24 h-24 mx-auto mb-6 relative">
+                <div className="absolute inset-0 bg-gradient-to-tr from-[#F97316]/20 to-[#8B5CF6]/20 rounded-full animate-pulse"></div>
+                <svg 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  className="h-full w-full text-[#8B5CF6] drop-shadow-lg" 
+                  fill="none" 
+                  viewBox="0 0 24 24" 
+                  stroke="currentColor"
+                >
+                  <path 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    strokeWidth={1.5} 
+                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" 
+                  />
+                </svg>
+                <div className="absolute -right-2 -top-2 w-8 h-8 bg-[#F97316] rounded-full flex items-center justify-center text-white text-lg font-bold shadow-lg">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
+                  </svg>
+                </div>
+              </div>
+              
+              <h2 className="text-2xl md:text-3xl font-bold mb-4 text-foreground bg-gradient-to-r from-[#F97316]/90 to-[#8B5CF6]/90 bg-clip-text text-transparent">Enter a Stock Symbol to Begin</h2>
+              
+              <div className="max-w-md mx-auto p-6 glass-card rounded-2xl mb-8">
+                <p className="text-lg text-foreground/90 leading-relaxed">
+                  Search for a stock symbol (like <span className="font-semibold text-[#F97316]">AAPL</span>, <span className="font-semibold text-[#8B5CF6]">MSFT</span>, <span className="font-semibold text-[#F97316]">GOOGL</span>) to view detailed information, 
+                  sentiment analysis, and recent news.
+                </p>
+              </div>
+              
+              <div className="flex flex-wrap justify-center gap-3 mt-6">
+                <div className="flex items-center gap-2 p-3 bg-[#F97316]/10 dark:bg-[#F97316]/20 rounded-lg">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#F97316]" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z" clipRule="evenodd" />
+                  </svg>
+                  <span className="font-medium">Stock Performance</span>
+                </div>
+                <div className="flex items-center gap-2 p-3 bg-[#8B5CF6]/10 dark:bg-[#8B5CF6]/20 rounded-lg">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#8B5CF6]" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
+                    <path fillRule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clipRule="evenodd" />
+                  </svg>
+                  <span className="font-medium">Latest News</span>
+                </div>
+                <div className="flex items-center gap-2 p-3 bg-[#F97316]/10 dark:bg-[#F97316]/20 rounded-lg">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#F97316]" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 9a1 1 0 100-2 1 1 0 000 2zm7-1a1 1 0 11-2 0 1 1 0 012 0zm-.464 5.535a1 1 0 10-1.415-1.414 3 3 0 01-4.242 0 1 1 0 00-1.415 1.414 5 5 0 007.072 0z" clipRule="evenodd" />
+                  </svg>
+                  <span className="font-medium">Sentiment Analysis</span>
+                </div>
+              </div>
+            </div>
           </div>
         )}
         
