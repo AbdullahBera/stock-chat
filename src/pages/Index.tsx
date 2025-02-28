@@ -21,11 +21,7 @@ const Index = () => {
       // In a real app, you might validate the symbol against an API here
       setSearchedSymbol(symbol);
       
-      toast({
-        title: "Stock Found",
-        description: `Displaying information for ${symbol}`,
-        duration: 3000,
-      });
+      // Toast notification removed
     } catch (error) {
       console.error("Error searching for stock:", error);
       toast({
