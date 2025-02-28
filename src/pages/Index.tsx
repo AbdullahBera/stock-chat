@@ -107,24 +107,25 @@ const Index = () => {
             
             <div className="relative">
               <div className="w-24 h-24 mx-auto mb-6 relative">
-                <div className="absolute inset-0 bg-gradient-to-tr from-[#F97316]/20 to-[#8B5CF6]/20 rounded-full animate-pulse"></div>
-                <svg 
-                  xmlns="http://www.w3.org/2000/svg" 
-                  className="h-full w-full text-[#8B5CF6] drop-shadow-lg" 
-                  fill="none" 
-                  viewBox="0 0 24 24" 
-                  stroke="currentColor"
-                >
-                  <path 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round" 
-                    strokeWidth={1.5} 
-                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" 
-                  />
-                </svg>
-                <div className="absolute -right-2 -top-2 w-8 h-8 bg-[#F97316] rounded-full flex items-center justify-center text-white text-lg font-bold shadow-lg">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
+                <div className="absolute inset-0 bg-[#F1E9FF] rounded-full"></div>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <g transform="translate(15, 15)">
+                      {/* First bar */}
+                      <rect x="0" y="25" width="10" height="15" rx="5" fill="#8B5CF6" />
+                      
+                      {/* Second bar */}
+                      <rect x="15" y="15" width="10" height="25" rx="5" fill="#8B5CF6" />
+                      
+                      {/* Third bar */}
+                      <rect x="30" y="5" width="10" height="35" rx="5" fill="#8B5CF6" />
+                      
+                      {/* Plus icon circle */}
+                      <circle cx="40" cy="5" r="12" fill="#F97316" />
+                      
+                      {/* Plus icon */}
+                      <path d="M40 0V10M35 5H45" stroke="white" strokeWidth="2" strokeLinecap="round" />
+                    </g>
                   </svg>
                 </div>
               </div>
