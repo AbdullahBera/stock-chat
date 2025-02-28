@@ -22,6 +22,7 @@ const StockSearch: React.FC<StockSearchProps> = ({ onSearch, isLoading }) => {
   const [input, setInput] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
   const { toast } = useToast();
   const inputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
@@ -77,9 +78,13 @@ const StockSearch: React.FC<StockSearchProps> = ({ onSearch, isLoading }) => {
 
   return (
     <div className="w-full max-w-md mx-auto mb-6 relative animate-fadeIn">
-      <div className={`flex items-center space-x-2 ${isFocused ? 'scale-[1.02]' : ''} transition-all duration-300`}>
+      <div 
+        className={`flex items-center space-x-2 ${isFocused ? 'scale-[1.02]' : ''} transition-all duration-300`}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
         <div className="relative w-full">
-          <div className={`absolute inset-0 bg-primary/20 dark:bg-primary/30 rounded-full blur-xl transition-opacity duration-300 ${isFocused ? 'opacity-70' : 'opacity-0'}`}></div>
+          <div className={`absolute inset-0 ${isHovered ? 'bg-gradient-to-r from-purple-500/30 to-teal-500/30' : 'bg-primary/20 dark:bg-primary/30'} rounded-full blur-xl transition-all duration-500 ${isFocused ? 'opacity-70' : isHovered ? 'opacity-50' : 'opacity-0'}`}></div>
           <Input
             ref={inputRef}
             type="text"
@@ -91,7 +96,7 @@ const StockSearch: React.FC<StockSearchProps> = ({ onSearch, isLoading }) => {
               setShowSuggestions(true);
               setIsFocused(true);
             }}
-            className={`rounded-full h-12 pl-4 pr-12 shadow-md border-purple-400 dark:border-purple-700 bg-white/10 dark:bg-[#20133A]/80 backdrop-blur-md text-foreground focus:ring-2 focus:ring-primary focus:border-transparent transition-all ${isFocused ? 'shadow-lg shadow-primary/20 dark:shadow-primary/30' : ''}`}
+            className={`rounded-full h-12 pl-4 pr-12 shadow-md ${isHovered ? 'border-accent/70 dark:border-accent/70' : 'border-purple-400 dark:border-purple-700'} bg-white/10 dark:bg-[#20133A]/80 backdrop-blur-md text-foreground focus:ring-2 focus:ring-primary focus:border-transparent transition-all ${isFocused ? 'shadow-lg shadow-primary/20 dark:shadow-primary/30' : ''}`}
           />
           {input.length > 0 && (
             <button 
@@ -103,12 +108,12 @@ const StockSearch: React.FC<StockSearchProps> = ({ onSearch, isLoading }) => {
               </svg>
             </button>
           )}
-          <div className={`absolute -bottom-1 left-[10%] right-[10%] h-0.5 bg-gradient-to-r from-primary via-accent to-primary rounded-full transform scale-x-0 transition-transform duration-300 origin-left ${isFocused ? 'scale-x-100' : ''}`}></div>
+          <div className={`absolute -bottom-1 left-[10%] right-[10%] h-0.5 ${isHovered ? 'bg-gradient-to-r from-accent via-primary to-accent' : 'bg-gradient-to-r from-primary via-accent to-primary'} rounded-full transform scale-x-0 transition-all duration-500 origin-left ${isFocused || isHovered ? 'scale-x-100' : ''}`}></div>
         </div>
         <Button 
           onClick={handleSearch}
           disabled={isLoading} 
-          className={`h-12 px-6 bg-gradient-to-r from-primary to-accent hover:opacity-90 text-white rounded-full shadow-lg transition-all ${isFocused ? 'scale-105' : ''}`}
+          className={`h-12 px-6 ${isHovered ? 'bg-gradient-to-r from-accent to-primary' : 'bg-gradient-to-r from-primary to-accent'} hover:opacity-90 text-white rounded-full shadow-lg transition-all duration-500 ${isFocused ? 'scale-105' : ''}`}
         >
           {isLoading ? (
             <div className="flex items-center">
