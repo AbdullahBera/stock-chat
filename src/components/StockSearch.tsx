@@ -79,12 +79,12 @@ const StockSearch: React.FC<StockSearchProps> = ({ onSearch, isLoading }) => {
   return (
     <div className="w-full max-w-md mx-auto mb-6 relative animate-fadeIn">
       <div 
-        className={`flex items-center space-x-2 ${isFocused ? 'scale-[1.02]' : ''} transition-all duration-300`}
+        className={`flex items-center space-x-2 ${isFocused ? 'scale-[1.01]' : ''} transition-all duration-500 ease-in-out`}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
         <div className="relative w-full">
-          <div className={`absolute inset-0 ${isHovered ? 'bg-gradient-to-r from-purple-500/30 to-teal-500/30' : 'bg-primary/20 dark:bg-primary/30'} rounded-full blur-xl transition-all duration-500 ${isFocused ? 'opacity-70' : isHovered ? 'opacity-50' : 'opacity-0'}`}></div>
+          <div className={`absolute inset-0 ${isHovered ? 'bg-gradient-to-r from-[#F2FCE2]/40 to-[#D3E4FD]/40' : 'bg-[#F1F0FB]/30'} rounded-3xl blur-md transition-all duration-700 ${isFocused ? 'opacity-80' : isHovered ? 'opacity-60' : 'opacity-0'}`}></div>
           <Input
             ref={inputRef}
             type="text"
@@ -96,28 +96,28 @@ const StockSearch: React.FC<StockSearchProps> = ({ onSearch, isLoading }) => {
               setShowSuggestions(true);
               setIsFocused(true);
             }}
-            className={`rounded-full h-12 pl-4 pr-12 shadow-md ${isHovered ? 'border-accent/70 dark:border-accent/70' : 'border-purple-400 dark:border-purple-700'} bg-white/10 dark:bg-[#20133A]/80 backdrop-blur-md text-foreground focus:ring-2 focus:ring-primary focus:border-transparent transition-all ${isFocused ? 'shadow-lg shadow-primary/20 dark:shadow-primary/30' : ''}`}
+            className={`rounded-3xl h-12 pl-4 pr-12 ${isHovered ? 'border-[#FEC6A1]/70 dark:border-[#FEC6A1]/50' : 'border-[#E5DEFF]/70 dark:border-[#E5DEFF]/30'} bg-white/5 dark:bg-[#20133A]/40 backdrop-blur-sm text-foreground focus:ring-1 focus:ring-[#FDE1D3]/70 focus:border-[#FDE1D3]/70 transition-all duration-500 ease-in-out ${isFocused ? 'shadow-md shadow-[#FEF7CD]/10 dark:shadow-[#FEF7CD]/5' : ''}`}
           />
           {input.length > 0 && (
             <button 
               onClick={() => setInput("")}
-              className="absolute right-12 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-accent transition-colors"
+              className="absolute right-12 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-[#FEC6A1] transition-colors duration-300"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
               </svg>
             </button>
           )}
-          <div className={`absolute -bottom-1 left-[10%] right-[10%] h-0.5 ${isHovered ? 'bg-gradient-to-r from-accent via-primary to-accent' : 'bg-gradient-to-r from-primary via-accent to-primary'} rounded-full transform scale-x-0 transition-all duration-500 origin-left ${isFocused || isHovered ? 'scale-x-100' : ''}`}></div>
+          <div className={`absolute -bottom-1 left-[15%] right-[15%] h-[2px] ${isHovered ? 'bg-gradient-to-r from-[#FDE1D3] via-[#E5DEFF] to-[#D3E4FD]' : 'bg-gradient-to-r from-[#D3E4FD] via-[#E5DEFF] to-[#FDE1D3]'} rounded-full transform scale-x-0 transition-all duration-700 ease-in-out origin-left ${isFocused || isHovered ? 'scale-x-100' : ''}`}></div>
         </div>
         <Button 
           onClick={handleSearch}
           disabled={isLoading} 
-          className={`h-12 px-6 ${isHovered ? 'bg-gradient-to-r from-accent to-primary' : 'bg-gradient-to-r from-primary to-accent'} hover:opacity-90 text-white rounded-full shadow-lg transition-all duration-500 ${isFocused ? 'scale-105' : ''}`}
+          className={`h-12 px-6 ${isHovered ? 'bg-gradient-to-r from-[#FDE1D3] to-[#E5DEFF]' : 'bg-gradient-to-r from-[#E5DEFF] to-[#FDE1D3]'} hover:opacity-90 text-[#8E9196] dark:text-gray-800 rounded-3xl shadow-sm transition-all duration-700 ease-in-out hover:shadow-md ${isFocused ? 'scale-[1.02]' : ''}`}
         >
           {isLoading ? (
             <div className="flex items-center">
-              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-[#8E9196] dark:text-gray-800" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
@@ -132,14 +132,14 @@ const StockSearch: React.FC<StockSearchProps> = ({ onSearch, isLoading }) => {
       {showSuggestions && input.length > 0 && filteredSuggestions.length > 0 && (
         <div 
           ref={suggestionsRef}
-          className="absolute z-10 mt-1 w-full bg-white/80 dark:bg-gray-800/90 backdrop-blur-md shadow-lg rounded-md overflow-hidden animate-fadeIn border border-purple-200 dark:border-purple-800"
+          className="absolute z-10 mt-1 w-full bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm shadow-md rounded-xl overflow-hidden animate-fadeIn border border-[#FEF7CD]/30 dark:border-[#FEF7CD]/20"
         >
           <ul className="py-1">
             {filteredSuggestions.map(stock => (
               <li 
                 key={stock.symbol}
                 onClick={() => handleSuggestionClick(stock.symbol)}
-                className="px-4 py-2 hover:bg-primary/10 dark:hover:bg-primary/20 cursor-pointer transition-colors"
+                className="px-4 py-2 hover:bg-[#F2FCE2]/30 dark:hover:bg-[#F2FCE2]/10 cursor-pointer transition-colors duration-300"
               >
                 <div className="flex justify-between items-center">
                   <span className="font-medium text-foreground">{stock.symbol}</span>
@@ -160,7 +160,7 @@ const StockSearch: React.FC<StockSearchProps> = ({ onSearch, isLoading }) => {
             <button
               key={stock.symbol}
               onClick={() => handleSuggestionClick(stock.symbol)}
-              className="px-3 py-1 text-xs rounded-full bg-white/5 dark:bg-[#20133A]/50 hover:bg-primary/20 dark:hover:bg-primary/30 text-foreground transition-all border border-purple-200/30 dark:border-purple-700/50 shadow-sm hover:scale-105"
+              className="px-3 py-1 text-xs rounded-full bg-white/5 dark:bg-[#20133A]/30 hover:bg-[#F2FCE2]/20 dark:hover:bg-[#F2FCE2]/10 text-foreground transition-all duration-300 border border-[#E5DEFF]/30 dark:border-[#E5DEFF]/20 shadow-sm hover:scale-105"
             >
               {stock.symbol}
             </button>
