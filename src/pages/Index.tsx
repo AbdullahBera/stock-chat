@@ -13,17 +13,35 @@ const Index = () => {
   const [searchedSymbol, setSearchedSymbol] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const { toast } = useToast();
+  const [searchHistory, setSearchHistory] = useState<string[]>([]);
+  const [historyIndex, setHistoryIndex] = useState<number>(-1);
 
-  // Add history state management for back gesture support
+  // Add history state management for back and forward gesture support
   useEffect(() => {
     // Push state to history when a symbol is searched
     if (searchedSymbol) {
-      window.history.pushState({ symbol: searchedSymbol }, "", "");
+      window.history.pushState({ symbol: searchedSymbol }, "", `?symbol=${searchedSymbol}`);
+      
+      // Update our local history tracking
+      if (historyIndex < searchHistory.length - 1) {
+        // If we're not at the end of history, truncate the future history
+        const newHistory = searchHistory.slice(0, historyIndex + 1);
+        setSearchHistory([...newHistory, searchedSymbol]);
+        setHistoryIndex(historyIndex + 1);
+      } else {
+        // Add to the end of history
+        setSearchHistory([...searchHistory, searchedSymbol]);
+        setHistoryIndex(searchHistory.length);
+      }
     }
 
-    // Handle back button/gesture
-    const handlePopState = () => {
-      setSearchedSymbol("");
+    // Handle back/forward button or gesture
+    const handlePopState = (event: PopStateEvent) => {
+      if (event.state && event.state.symbol) {
+        setSearchedSymbol(event.state.symbol);
+      } else {
+        setSearchedSymbol("");
+      }
     };
 
     window.addEventListener('popstate', handlePopState);
@@ -31,7 +49,7 @@ const Index = () => {
     return () => {
       window.removeEventListener('popstate', handlePopState);
     };
-  }, [searchedSymbol]);
+  }, [searchedSymbol, searchHistory, historyIndex]);
 
   const handleSearch = async (symbol: string) => {
     setIsLoading(true);
@@ -55,6 +73,11 @@ const Index = () => {
     
     // Go back in history to handle back button properly
     window.history.back();
+  };
+
+  const goForward = () => {
+    // This will trigger the forward gesture behavior
+    window.history.forward();
   };
 
   return (
