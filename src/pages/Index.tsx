@@ -56,7 +56,7 @@ const Index = () => {
         </div>
         
         <div className="text-center mb-8 animate-fadeIn">
-          <h1 className="text-3xl md:text-4xl font-bold mb-2 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">Stock Chat</h1>
+          <h1 className="text-3xl md:text-4xl font-bold mb-2 bg-gradient-to-r from-[#FDE1D3] to-[#E5DEFF] bg-clip-text text-transparent">StockChat</h1>
           <p className="text-foreground/80">Search for a stock to analyze sentiment, news, and performance</p>
         </div>
         
