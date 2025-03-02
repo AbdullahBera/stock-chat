@@ -152,11 +152,11 @@ export async function fetchStockData(symbol: string): Promise<StockData> {
     await connectToDatabase();
     
     // Check if we have recent data in MongoDB
-    const cachedData = await StockDataModel.findOne({ symbol });
+    const cachedData = await StockDataModel.findOne({ symbol }).exec();
     
     if (cachedData && !isDataStale(cachedData.lastUpdated)) {
       console.log(`Using cached data for ${symbol}`);
-      return cachedData;
+      return cachedData as unknown as StockData;
     }
     
     // If no cached data or it's stale, fetch fresh data
@@ -171,7 +171,7 @@ export async function fetchStockData(symbol: string): Promise<StockData> {
         { symbol },
         { ...freshData, lastUpdated: new Date() },
         { upsert: true, new: true }
-      );
+      ).exec();
       
       return freshData;
     } catch (apiError) {
@@ -182,9 +182,9 @@ export async function fetchStockData(symbol: string): Promise<StockData> {
         toast({
           title: "Using cached data",
           description: "Could not fetch fresh data. Using previously cached data.",
-          variant: "warning",
+          variant: "default",
         });
-        return cachedData;
+        return cachedData as unknown as StockData;
       }
       
       // Last resort: use mock data
@@ -196,7 +196,7 @@ export async function fetchStockData(symbol: string): Promise<StockData> {
           { symbol },
           { ...mockData, lastUpdated: new Date() },
           { upsert: true, new: true }
-        );
+        ).exec();
       } catch (dbError) {
         console.error('Failed to cache mock data:', dbError);
       }

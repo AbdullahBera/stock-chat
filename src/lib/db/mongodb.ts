@@ -2,8 +2,8 @@
 import mongoose from 'mongoose';
 import { toast } from '@/components/ui/use-toast';
 
-// MongoDB connection string - should be moved to environment variables in production
-const MONGODB_URI = 'your_mongodb_connection_string_here';
+// MongoDB connection string - replace with your actual connection string
+const MONGODB_URI = 'mongodb+srv://username:password@cluster0.mongodb.net/stockapp?retryWrites=true&w=majority';
 
 // Global variable to track connection state
 let isConnected = false;
