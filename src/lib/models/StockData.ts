@@ -1,5 +1,5 @@
 
-import mongoose, { Document, Schema, model, Model } from 'mongoose';
+import mongoose, { Document, Schema, Model } from 'mongoose';
 
 // Define interfaces for our models
 export interface IStockData extends Document {
@@ -109,21 +109,24 @@ const stockNewsSchema = new Schema<IStockNews>({
   sentiment: String,
 });
 
-// Use a more reliable approach to check for existing models
-let StockDataModel: Model<IStockData>;
-let StockNewsModel: Model<IStockNews>;
-
-// Check if the models already exist in mongoose.models
-if (mongoose.models && mongoose.models.market_prices_master) {
-  StockDataModel = mongoose.models.market_prices_master as Model<IStockData>;
-} else {
-  StockDataModel = mongoose.model<IStockData>('market_prices_master', stockDataSchema, 'market_prices_master');
+// Function to create or retrieve models safely
+function getModel<T extends Document>(
+  modelName: string, 
+  schema: Schema, 
+  collectionName: string
+): Model<T> {
+  // Important: We need to check if mongoose is defined first
+  if (mongoose.connection.readyState === 1) {
+    // Connected, safe to check models
+    return mongoose.models[modelName] 
+      ? (mongoose.models[modelName] as Model<T>) 
+      : mongoose.model<T>(modelName, schema, collectionName);
+  } else {
+    // Not connected yet, just create the model (connection will be established later)
+    return mongoose.model<T>(modelName, schema, collectionName);
+  }
 }
 
-if (mongoose.models && mongoose.models.stock_news_master) {
-  StockNewsModel = mongoose.models.stock_news_master as Model<IStockNews>;
-} else {
-  StockNewsModel = mongoose.model<IStockNews>('stock_news_master', stockNewsSchema, 'stock_news_master');
-}
-
-export { StockDataModel, StockNewsModel };
+// Export models using the safe getter function
+export const StockDataModel = getModel<IStockData>('market_prices_master', stockDataSchema, 'market_prices_master');
+export const StockNewsModel = getModel<IStockNews>('stock_news_master', stockNewsSchema, 'stock_news_master');

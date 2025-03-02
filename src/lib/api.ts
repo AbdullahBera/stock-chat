@@ -1,3 +1,4 @@
+
 import axios from 'axios';
 import { connectToDatabase } from './db/mongodb';
 import { StockDataModel, StockNewsModel, IStockData, IStockNews } from './models/StockData';
@@ -151,8 +152,16 @@ export async function fetchStockData(symbol: string): Promise<StockData> {
     // Try to connect to MongoDB
     await connectToDatabase();
     
+    console.log(`Attempting to fetch data for ${symbol} from MongoDB`);
+    
     // Check if we have recent data in MongoDB
-    const cachedData = await StockDataModel.findOne({ symbol }).exec();
+    let cachedData = null;
+    try {
+      cachedData = await StockDataModel.findOne({ symbol }).lean().exec();
+      console.log("DB query result:", cachedData ? "Data found" : "No data found");
+    } catch (dbError) {
+      console.error('Error querying MongoDB:', dbError);
+    }
     
     if (cachedData && !isDataStale(new Date(cachedData.lastUpdated))) {
       console.log(`Using cached data for ${symbol}`);
@@ -180,11 +189,16 @@ export async function fetchStockData(symbol: string): Promise<StockData> {
       const freshData = await fetchFromMarketStack(symbol);
       
       // Update or insert data in MongoDB
-      await StockDataModel.findOneAndUpdate(
-        { symbol },
-        { ...freshData, lastUpdated: new Date() },
-        { upsert: true, new: true }
-      ).exec();
+      try {
+        await StockDataModel.findOneAndUpdate(
+          { symbol },
+          { ...freshData, lastUpdated: new Date() },
+          { upsert: true, new: true }
+        ).exec();
+        console.log(`Successfully updated MongoDB with new data for ${symbol}`);
+      } catch (updateError) {
+        console.error('Error updating MongoDB:', updateError);
+      }
       
       return freshData;
     } catch (apiError) {
@@ -214,14 +228,24 @@ export async function fetchStockData(symbol: string): Promise<StockData> {
       }
       
       // Last resort: use mock data
+      toast({
+        title: "Using simulated data",
+        description: "Could not connect to market data API. Using simulated data.",
+        variant: "default",
+      });
+      
       const mockData = generateMockStockData(symbol);
       
       // Still try to cache the mock data
-      await StockDataModel.findOneAndUpdate(
-        { symbol },
-        { ...mockData, lastUpdated: new Date() },
-        { upsert: true, new: true }
-      ).exec();
+      try {
+        await StockDataModel.findOneAndUpdate(
+          { symbol },
+          { ...mockData, lastUpdated: new Date() },
+          { upsert: true, new: true }
+        ).exec();
+      } catch (cacheError) {
+        console.error('Error caching mock data:', cacheError);
+      }
       
       return mockData;
     }
@@ -406,11 +430,18 @@ export async function fetchNewsForStock(symbol: string): Promise<NewsItem[]> {
   try {
     await connectToDatabase();
     
-    const news = await StockNewsModel.find({ symbol })
-      .sort({ date: -1 })
-      .limit(10)
-      .lean()
-      .exec();
+    let news = [];
+    try {
+      news = await StockNewsModel.find({ symbol })
+        .sort({ date: -1 })
+        .limit(10)
+        .lean()
+        .exec();
+      
+      console.log(`Retrieved ${news.length} news items for ${symbol}`);
+    } catch (findError) {
+      console.error('Error finding news in database:', findError);
+    }
     
     if (news && news.length > 0) {
       return news.map((item: any) => ({
@@ -425,7 +456,33 @@ export async function fetchNewsForStock(symbol: string): Promise<NewsItem[]> {
     }
     
     console.log('No news found in database, using mock data');
-    return generateNewsItems(symbol, 10);
+    const mockNews = generateNewsItems(symbol, 10);
+    
+    // Store mock news in database for future use
+    try {
+      for (const newsItem of mockNews) {
+        await StockNewsModel.findOneAndUpdate(
+          { symbol, title: newsItem.title },
+          {
+            symbol,
+            title: newsItem.title,
+            source: newsItem.source,
+            date: new Date(newsItem.date),
+            snippet: newsItem.snippet,
+            summary: newsItem.snippet,
+            url: newsItem.url,
+            sentiment: newsItem.sentiment,
+            stored_at: new Date()
+          },
+          { upsert: true, new: true }
+        ).exec();
+      }
+      console.log('Stored mock news in database');
+    } catch (storeError) {
+      console.error('Error storing mock news:', storeError);
+    }
+    
+    return mockNews;
   } catch (error) {
     console.error('Error fetching news from database:', error);
     await new Promise(resolve => setTimeout(resolve, 1200));
