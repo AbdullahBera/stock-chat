@@ -2,7 +2,6 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { NewsItem, fetchNewsForStock } from '../lib/api';
-import { toast } from "@/components/ui/use-toast";
 
 interface NewsCardProps {
   symbol: string;
@@ -21,16 +20,10 @@ const NewsCard: React.FC<NewsCardProps> = ({ symbol }) => {
       
       try {
         const news = await fetchNewsForStock(symbol);
-        console.log(`Loaded ${news.length} news items for ${symbol}`);
         setNewsItems(news);
       } catch (err) {
         console.error('Error fetching news:', err);
         setError('Failed to load news. Please try again later.');
-        toast({
-          title: "Error",
-          description: "Failed to load news data. Using fallback data instead.",
-          variant: "destructive",
-        });
       } finally {
         setIsLoading(false);
       }
@@ -105,18 +98,6 @@ const NewsCard: React.FC<NewsCardProps> = ({ symbol }) => {
                   item.sentiment === 'negative' ? 'bg-red-50/50 dark:bg-red-900/10' : 
                   'bg-gray-50/50 dark:bg-gray-800/30'}`}
               >
-                {item.banner_image && (
-                  <div className="mb-3">
-                    <img 
-                      src={item.banner_image} 
-                      alt={`Image for ${item.title}`}
-                      className="w-full h-40 object-cover rounded-lg"
-                      onError={(e) => {
-                        e.currentTarget.style.display = 'none';
-                      }}
-                    />
-                  </div>
-                )}
                 <div className="flex justify-between items-start mb-2">
                   <h4 className="text-base font-medium">{item.title}</h4>
                   {getSentimentBadge(item.sentiment)}
