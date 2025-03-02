@@ -228,21 +228,27 @@ export async function fetchNewsForStock(symbol: string): Promise<NewsItem[]> {
       await connectToDatabase();
       const StockNews = getStockNewsModel();
       
-      // Query for news related to this ticker symbol
-      // Fix the TypeScript error by using type assertion and simplifying the query
-      const dbNews = await StockNews.find({
-        'ticker_sentiment.ticker': new RegExp(symbol, 'i')
+      // Query for news related to this ticker symbol using a string pattern instead of RegExp
+      const tickerPattern = symbol.toUpperCase();
+      const dbNews = await StockNews.find({ 
+        $or: [
+          { 'ticker_sentiment.ticker': tickerPattern },
+          { 'ticker_sentiment.ticker': symbol }
+        ]
       })
         .sort({ time_published: -1 })
         .limit(10)
         .lean()
-        .exec() as unknown as StockNewsItem[];
+        .exec();
       
-      if (dbNews && dbNews.length > 0) {
-        console.log(`Found ${dbNews.length} news items in database for ${symbol}`);
+      // Type cast the result to StockNewsItem[]
+      const typedDbNews = dbNews as unknown as StockNewsItem[];
+      
+      if (typedDbNews && typedDbNews.length > 0) {
+        console.log(`Found ${typedDbNews.length} news items in database for ${symbol}`);
         
         // Map database news to our NewsItem interface
-        return dbNews.map(item => {
+        return typedDbNews.map(item => {
           // Determine sentiment based on sentiment score
           let sentiment: 'positive' | 'negative' | 'neutral' = 'neutral';
           if (item.overall_sentiment_score) {
@@ -345,18 +351,24 @@ export async function fetchSentimentAnalysis(symbol: string): Promise<SentimentD
       await connectToDatabase();
       const StockNews = getStockNewsModel();
       
-      // Get recent news to analyze sentiment
-      // Fix the TypeScript error by using type assertion and simplifying the query
-      const recentNews = await StockNews.find({
-        'ticker_sentiment.ticker': new RegExp(symbol, 'i')
+      // Get recent news to analyze sentiment using a string pattern instead of RegExp
+      const tickerPattern = symbol.toUpperCase();
+      const recentNews = await StockNews.find({ 
+        $or: [
+          { 'ticker_sentiment.ticker': tickerPattern },
+          { 'ticker_sentiment.ticker': symbol }
+        ]
       })
         .sort({ time_published: -1 })
         .limit(20)
         .lean()
-        .exec() as unknown as StockNewsItem[];
+        .exec();
       
-      if (recentNews && recentNews.length > 0) {
-        console.log(`Found ${recentNews.length} news items for sentiment analysis of ${symbol}`);
+      // Type cast the result to StockNewsItem[]
+      const typedRecentNews = recentNews as unknown as StockNewsItem[];
+      
+      if (typedRecentNews && typedRecentNews.length > 0) {
+        console.log(`Found ${typedRecentNews.length} news items for sentiment analysis of ${symbol}`);
         
         // Count sentiment categories
         let positiveCount = 0;
@@ -367,7 +379,7 @@ export async function fetchSentimentAnalysis(symbol: string): Promise<SentimentD
         const keywordMap = new Map<string, { total: number, score: number, occurrences: number }>();
         
         // Process each news item
-        recentNews.forEach(item => {
+        typedRecentNews.forEach(item => {
           // Determine sentiment
           if (item.overall_sentiment_score) {
             if (item.overall_sentiment_score > 0.25) positiveCount++;
