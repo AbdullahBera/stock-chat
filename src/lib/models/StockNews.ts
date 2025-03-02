@@ -41,8 +41,9 @@ const stockNewsSchema = new mongoose.Schema<StockNewsItem>({
 // Get the model or create it if it doesn't exist
 export function getStockNewsModel() {
   // Check if the model is already defined
-  return mongoose.models.StockNews || 
-    mongoose.model<StockNewsItem>('StockNews', stockNewsSchema, 'stock_news_master');
+  const modelName = 'StockNews';
+  return mongoose.models[modelName] || 
+    mongoose.model<StockNewsItem>(modelName, stockNewsSchema, 'stock_news_master');
 }
 
 export default getStockNewsModel;

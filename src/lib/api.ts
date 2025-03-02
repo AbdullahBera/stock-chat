@@ -52,8 +52,8 @@ export interface SentimentData {
   }>;
 }
 
-// Alpha Vantage API key - replace with your own
-const ALPHA_VANTAGE_API_KEY = 'demo'; // Replace with your actual API key
+// Alpha Vantage API key from environment variable
+const ALPHA_VANTAGE_API_KEY = process.env.ALPHA_VANTAGE_API_KEY || 'ZQ3AVATA3RR7QGNQ';
 
 // Mock data generator functions
 function generateMockStockData(symbol: string): StockData {
@@ -229,9 +229,10 @@ export async function fetchNewsForStock(symbol: string): Promise<NewsItem[]> {
       const StockNews = getStockNewsModel();
       
       // Query for news related to this ticker symbol
+      // Fix the TypeScript error by using find() with an object parameter
       const dbNews = await StockNews.find({ 
         'ticker_sentiment.ticker': { $regex: new RegExp(symbol, 'i') } 
-      }).sort({ time_published: -1 }).limit(10);
+      }).sort({ time_published: -1 }).limit(10).exec();
       
       if (dbNews && dbNews.length > 0) {
         console.log(`Found ${dbNews.length} news items in database for ${symbol}`);
@@ -341,9 +342,10 @@ export async function fetchSentimentAnalysis(symbol: string): Promise<SentimentD
       const StockNews = getStockNewsModel();
       
       // Get recent news to analyze sentiment
+      // Fix the TypeScript error by using find() with an object parameter
       const recentNews = await StockNews.find({ 
         'ticker_sentiment.ticker': { $regex: new RegExp(symbol, 'i') } 
-      }).sort({ time_published: -1 }).limit(20);
+      }).sort({ time_published: -1 }).limit(20).exec();
       
       if (recentNews && recentNews.length > 0) {
         console.log(`Found ${recentNews.length} news items for sentiment analysis of ${symbol}`);
