@@ -228,27 +228,22 @@ export async function fetchNewsForStock(symbol: string): Promise<NewsItem[]> {
       await connectToDatabase();
       const StockNews = getStockNewsModel();
       
-      // Query for news related to this ticker symbol using a string pattern instead of RegExp
+      // Query for news related to this ticker symbol
       const tickerPattern = symbol.toUpperCase();
-      const dbNews = await StockNews.find({ 
+      
+      // Use the model and simple query style to avoid TypeScript issues
+      const dbNewsDocs = await StockNews.find({
         $or: [
           { 'ticker_sentiment.ticker': tickerPattern },
           { 'ticker_sentiment.ticker': symbol }
         ]
-      })
-        .sort({ time_published: -1 })
-        .limit(10)
-        .lean()
-        .exec();
+      }).sort({ time_published: -1 }).limit(10).lean();
       
-      // Type cast the result to StockNewsItem[]
-      const typedDbNews = dbNews as unknown as StockNewsItem[];
-      
-      if (typedDbNews && typedDbNews.length > 0) {
-        console.log(`Found ${typedDbNews.length} news items in database for ${symbol}`);
+      if (dbNewsDocs && dbNewsDocs.length > 0) {
+        console.log(`Found ${dbNewsDocs.length} news items in database for ${symbol}`);
         
         // Map database news to our NewsItem interface
-        return typedDbNews.map(item => {
+        return dbNewsDocs.map(item => {
           // Determine sentiment based on sentiment score
           let sentiment: 'positive' | 'negative' | 'neutral' = 'neutral';
           if (item.overall_sentiment_score) {
@@ -351,24 +346,19 @@ export async function fetchSentimentAnalysis(symbol: string): Promise<SentimentD
       await connectToDatabase();
       const StockNews = getStockNewsModel();
       
-      // Get recent news to analyze sentiment using a string pattern instead of RegExp
+      // Get recent news to analyze sentiment
       const tickerPattern = symbol.toUpperCase();
-      const recentNews = await StockNews.find({ 
+      
+      // Use the model and simple query style to avoid TypeScript issues
+      const recentNewsDocs = await StockNews.find({
         $or: [
           { 'ticker_sentiment.ticker': tickerPattern },
           { 'ticker_sentiment.ticker': symbol }
         ]
-      })
-        .sort({ time_published: -1 })
-        .limit(20)
-        .lean()
-        .exec();
+      }).sort({ time_published: -1 }).limit(20).lean();
       
-      // Type cast the result to StockNewsItem[]
-      const typedRecentNews = recentNews as unknown as StockNewsItem[];
-      
-      if (typedRecentNews && typedRecentNews.length > 0) {
-        console.log(`Found ${typedRecentNews.length} news items for sentiment analysis of ${symbol}`);
+      if (recentNewsDocs && recentNewsDocs.length > 0) {
+        console.log(`Found ${recentNewsDocs.length} news items for sentiment analysis of ${symbol}`);
         
         // Count sentiment categories
         let positiveCount = 0;
@@ -379,7 +369,7 @@ export async function fetchSentimentAnalysis(symbol: string): Promise<SentimentD
         const keywordMap = new Map<string, { total: number, score: number, occurrences: number }>();
         
         // Process each news item
-        typedRecentNews.forEach(item => {
+        recentNewsDocs.forEach(item => {
           // Determine sentiment
           if (item.overall_sentiment_score) {
             if (item.overall_sentiment_score > 0.25) positiveCount++;
