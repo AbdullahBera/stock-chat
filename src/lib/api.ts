@@ -1,3 +1,4 @@
+
 import axios from 'axios';
 import { connectToDatabase } from './db/mongodb';
 import { StockDataModel, StockNewsModel } from './models/StockData';
@@ -159,7 +160,7 @@ export async function fetchStockData(symbol: string): Promise<StockData> {
       return {
         symbol: cachedData.symbol,
         name: cachedData.name || '',
-        price: cachedData.price || 0,
+        price: cachedData.price || cachedData.close || 0,
         change: cachedData.change || 0,
         changePercent: cachedData.changePercent || 0,
         open: cachedData.open || 0,
@@ -180,11 +181,15 @@ export async function fetchStockData(symbol: string): Promise<StockData> {
       const freshData = await fetchFromMarketStack(symbol);
       
       // Update or insert data in MongoDB
-      await StockDataModel.findOneAndUpdate(
-        { symbol },
-        { ...freshData, lastUpdated: new Date() },
-        { upsert: true, new: true }
-      );
+      try {
+        await StockDataModel.findOneAndUpdate(
+          { symbol },
+          { ...freshData, lastUpdated: new Date() },
+          { upsert: true, new: true }
+        );
+      } catch (dbUpdateError) {
+        console.error('Failed to update MongoDB:', dbUpdateError);
+      }
       
       return freshData;
     } catch (apiError) {
@@ -200,7 +205,7 @@ export async function fetchStockData(symbol: string): Promise<StockData> {
         return {
           symbol: cachedData.symbol,
           name: cachedData.name || '',
-          price: cachedData.price || 0,
+          price: cachedData.price || cachedData.close || 0,
           change: cachedData.change || 0,
           changePercent: cachedData.changePercent || 0,
           open: cachedData.open || 0,
@@ -428,10 +433,10 @@ export async function fetchNewsForStock(symbol: string): Promise<NewsItem[]> {
         id: item._id.toString(),
         title: item.title || '',
         source: item.source || '',
-        date: new Date(item.date).toISOString().split('T')[0],
-        snippet: item.snippet || '',
+        date: new Date(item.date || item.time_published || item.stored_at).toISOString().split('T')[0],
+        snippet: item.snippet || item.summary || '',
         url: item.url || '#',
-        sentiment: item.sentiment as 'positive' | 'negative' | 'neutral'
+        sentiment: (item.sentiment || item.overall_sentiment_label || 'neutral') as 'positive' | 'negative' | 'neutral'
       }));
     }
     

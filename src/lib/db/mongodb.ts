@@ -14,6 +14,9 @@ export const connectToDatabase = async () => {
   }
 
   try {
+    // Set strict query mode to false to avoid warnings
+    mongoose.set('strictQuery', false);
+    
     const db = await mongoose.connect(MONGODB_URI);
     isConnected = !!db.connections[0].readyState;
     console.log('MongoDB connected successfully to stock_data database');
