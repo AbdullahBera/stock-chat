@@ -152,11 +152,24 @@ export async function fetchStockData(symbol: string): Promise<StockData> {
     await connectToDatabase();
     
     // Check if we have recent data in MongoDB
-    const cachedData = await StockDataModel.findOne({ symbol });
+    const cachedData = await StockDataModel.findOne({ symbol }).lean();
     
-    if (cachedData && !isDataStale(cachedData.lastUpdated)) {
+    if (cachedData && !isDataStale(new Date(cachedData.lastUpdated))) {
       console.log(`Using cached data for ${symbol}`);
-      return cachedData as unknown as StockData;
+      return {
+        symbol: cachedData.symbol,
+        name: cachedData.name || '',
+        price: cachedData.price || 0,
+        change: cachedData.change || 0,
+        changePercent: cachedData.changePercent || 0,
+        open: cachedData.open || 0,
+        high: cachedData.high || 0,
+        low: cachedData.low || 0,
+        volume: cachedData.volume || 0,
+        marketCap: cachedData.marketCap || 0,
+        pe: cachedData.pe || 0,
+        dividend: cachedData.dividend || 0
+      };
     }
     
     // If no cached data or it's stale, fetch fresh data
@@ -184,7 +197,20 @@ export async function fetchStockData(symbol: string): Promise<StockData> {
           description: "Could not fetch fresh data. Using previously cached data.",
           variant: "default",
         });
-        return cachedData as unknown as StockData;
+        return {
+          symbol: cachedData.symbol,
+          name: cachedData.name || '',
+          price: cachedData.price || 0,
+          change: cachedData.change || 0,
+          changePercent: cachedData.changePercent || 0,
+          open: cachedData.open || 0,
+          high: cachedData.high || 0,
+          low: cachedData.low || 0,
+          volume: cachedData.volume || 0,
+          marketCap: cachedData.marketCap || 0,
+          pe: cachedData.pe || 0,
+          dividend: cachedData.dividend || 0
+        };
       }
       
       // Last resort: use mock data
