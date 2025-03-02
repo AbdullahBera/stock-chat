@@ -51,8 +51,8 @@ export interface SentimentData {
   }>;
 }
 
-// MarketStack API key - should be stored securely in production
-const MARKETSTACK_API_KEY = 'your_marketstack_api_key_here';
+// MarketStack API key - ideally should be in environment variables
+const MARKETSTACK_API_KEY = '1e349ff276f87428d52c5b4bd2249eaf';
 const MARKETSTACK_BASE_URL = 'http://api.marketstack.com/v1';
 
 // Check if data is stale (older than 15 minutes)
@@ -152,7 +152,7 @@ export async function fetchStockData(symbol: string): Promise<StockData> {
     await connectToDatabase();
     
     // Check if we have recent data in MongoDB
-    const cachedData = await StockDataModel.findOne({ symbol }).exec();
+    const cachedData = await StockDataModel.findOne({ symbol });
     
     if (cachedData && !isDataStale(cachedData.lastUpdated)) {
       console.log(`Using cached data for ${symbol}`);
@@ -171,7 +171,7 @@ export async function fetchStockData(symbol: string): Promise<StockData> {
         { symbol },
         { ...freshData, lastUpdated: new Date() },
         { upsert: true, new: true }
-      ).exec();
+      );
       
       return freshData;
     } catch (apiError) {
@@ -196,7 +196,7 @@ export async function fetchStockData(symbol: string): Promise<StockData> {
           { symbol },
           { ...mockData, lastUpdated: new Date() },
           { upsert: true, new: true }
-        ).exec();
+        );
       } catch (dbError) {
         console.error('Failed to cache mock data:', dbError);
       }
