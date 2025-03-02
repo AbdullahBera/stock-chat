@@ -53,7 +53,7 @@ export interface SentimentData {
 }
 
 // Alpha Vantage API key from environment variable
-const ALPHA_VANTAGE_API_KEY = process.env.ALPHA_VANTAGE_API_KEY || 'ZQ3AVATA3RR7QGNQ';
+const ALPHA_VANTAGE_API_KEY = import.meta.env.VITE_ALPHA_VANTAGE_API_KEY || 'ZQ3AVATA3RR7QGNQ';
 
 // Mock data generator functions
 function generateMockStockData(symbol: string): StockData {
@@ -229,10 +229,14 @@ export async function fetchNewsForStock(symbol: string): Promise<NewsItem[]> {
       const StockNews = getStockNewsModel();
       
       // Query for news related to this ticker symbol
-      // Fix the TypeScript error by using find() with an object parameter
-      const dbNews = await StockNews.find({ 
-        'ticker_sentiment.ticker': { $regex: new RegExp(symbol, 'i') } 
-      }).sort({ time_published: -1 }).limit(10).exec();
+      // Fix the TypeScript error by providing the correct type signature
+      const dbNews = await StockNews.find({
+        'ticker_sentiment.ticker': { $regex: new RegExp(symbol, 'i') }
+      })
+        .sort({ time_published: -1 })
+        .limit(10)
+        .lean()  // Convert to plain JavaScript objects
+        .exec();
       
       if (dbNews && dbNews.length > 0) {
         console.log(`Found ${dbNews.length} news items in database for ${symbol}`);
@@ -342,10 +346,14 @@ export async function fetchSentimentAnalysis(symbol: string): Promise<SentimentD
       const StockNews = getStockNewsModel();
       
       // Get recent news to analyze sentiment
-      // Fix the TypeScript error by using find() with an object parameter
-      const recentNews = await StockNews.find({ 
-        'ticker_sentiment.ticker': { $regex: new RegExp(symbol, 'i') } 
-      }).sort({ time_published: -1 }).limit(20).exec();
+      // Fix the TypeScript error by providing the correct type signature
+      const recentNews = await StockNews.find({
+        'ticker_sentiment.ticker': { $regex: new RegExp(symbol, 'i') }
+      })
+        .sort({ time_published: -1 })
+        .limit(20)
+        .lean()  // Convert to plain JavaScript objects
+        .exec();
       
       if (recentNews && recentNews.length > 0) {
         console.log(`Found ${recentNews.length} news items for sentiment analysis of ${symbol}`);

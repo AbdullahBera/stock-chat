@@ -13,7 +13,7 @@ export async function connectToDatabase(): Promise<typeof mongoose> {
     console.log('Creating new database connection');
     
     // Get MongoDB URI from environment variable or fallback to a default for development
-    const mongoUri = process.env.MONGODB_URI || 'mongodb+srv://abdullahberakucuk:dJY5Dt1zrYmmsV6Q@makertdata.iinrc.mongodb.net/stock_data?retryWrites=true&w=majority&appName=makertdata';
+    const mongoUri = import.meta.env.VITE_MONGODB_URI || 'mongodb+srv://abdullahberakucuk:dJY5Dt1zrYmmsV6Q@makertdata.iinrc.mongodb.net/stock_data?retryWrites=true&w=majority&appName=makertdata';
     
     // Configure mongoose connection
     connection = await mongoose.connect(mongoUri, {
