@@ -1,3 +1,4 @@
+
 import axios from 'axios';
 import { connectToDatabase } from './db/mongodb';
 import { StockDataModel } from './models/StockData';
@@ -152,7 +153,7 @@ export async function fetchStockData(symbol: string): Promise<StockData> {
     await connectToDatabase();
     
     // Check if we have recent data in MongoDB
-    const cachedData = await StockDataModel.findOne({ symbol }).lean();
+    const cachedData = await StockDataModel.findOne({ symbol }).exec();
     
     if (cachedData && !isDataStale(new Date(cachedData.lastUpdated))) {
       console.log(`Using cached data for ${symbol}`);
@@ -184,7 +185,7 @@ export async function fetchStockData(symbol: string): Promise<StockData> {
         { symbol },
         { ...freshData, lastUpdated: new Date() },
         { upsert: true, new: true }
-      );
+      ).exec();
       
       return freshData;
     } catch (apiError) {
@@ -222,7 +223,7 @@ export async function fetchStockData(symbol: string): Promise<StockData> {
           { symbol },
           { ...mockData, lastUpdated: new Date() },
           { upsert: true, new: true }
-        );
+        ).exec();
       } catch (dbError) {
         console.error('Failed to cache mock data:', dbError);
       }
