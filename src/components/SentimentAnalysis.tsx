@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { SentimentData, fetchSentimentAnalysis } from '../lib/api';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import { toast } from "@/components/ui/use-toast";
 
 interface SentimentAnalysisProps {
   symbol: string;
@@ -21,10 +22,16 @@ const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({ symbol }) => {
       
       try {
         const data = await fetchSentimentAnalysis(symbol);
+        console.log(`Loaded sentiment data for ${symbol}`, data);
         setSentimentData(data);
       } catch (err) {
         console.error('Error fetching sentiment data:', err);
         setError('Failed to load sentiment analysis. Please try again later.');
+        toast({
+          title: "Error",
+          description: "Failed to load sentiment data. Using fallback data instead.",
+          variant: "destructive",
+        });
       } finally {
         setIsLoading(false);
       }
