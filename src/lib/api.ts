@@ -2,7 +2,7 @@
 // We'll use real data when available and fall back to mock data
 
 import { connectToDatabase } from './mongodb';
-import getStockNewsModel from './models/StockNews';
+import getStockNewsModel, { StockNewsItem } from './models/StockNews';
 
 export interface StockData {
   symbol: string;
@@ -229,14 +229,14 @@ export async function fetchNewsForStock(symbol: string): Promise<NewsItem[]> {
       const StockNews = getStockNewsModel();
       
       // Query for news related to this ticker symbol
-      // Fix the TypeScript error by providing the correct type signature
+      // Fix the TypeScript error by using type assertion and simplifying the query
       const dbNews = await StockNews.find({
-        'ticker_sentiment.ticker': { $regex: new RegExp(symbol, 'i') }
+        'ticker_sentiment.ticker': new RegExp(symbol, 'i')
       })
         .sort({ time_published: -1 })
         .limit(10)
-        .lean()  // Convert to plain JavaScript objects
-        .exec();
+        .lean()
+        .exec() as unknown as StockNewsItem[];
       
       if (dbNews && dbNews.length > 0) {
         console.log(`Found ${dbNews.length} news items in database for ${symbol}`);
@@ -346,14 +346,14 @@ export async function fetchSentimentAnalysis(symbol: string): Promise<SentimentD
       const StockNews = getStockNewsModel();
       
       // Get recent news to analyze sentiment
-      // Fix the TypeScript error by providing the correct type signature
+      // Fix the TypeScript error by using type assertion and simplifying the query
       const recentNews = await StockNews.find({
-        'ticker_sentiment.ticker': { $regex: new RegExp(symbol, 'i') }
+        'ticker_sentiment.ticker': new RegExp(symbol, 'i')
       })
         .sort({ time_published: -1 })
         .limit(20)
-        .lean()  // Convert to plain JavaScript objects
-        .exec();
+        .lean()
+        .exec() as unknown as StockNewsItem[];
       
       if (recentNews && recentNews.length > 0) {
         console.log(`Found ${recentNews.length} news items for sentiment analysis of ${symbol}`);
