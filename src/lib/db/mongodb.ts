@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 import { toast } from '@/components/ui/use-toast';
 
 // MongoDB connection string - ideally should be in environment variables
-const MONGODB_URI = 'mongodb+srv://abdullahberakucuk:dJY5Dt1zrYmmsV6Q@makertdata.iinrc.mongodb.net/?retryWrites=true&w=majority&appName=makertdata';
+const MONGODB_URI = 'mongodb+srv://abdullahberakucuk:dJY5Dt1zrYmmsV6Q@makertdata.iinrc.mongodb.net/stock_data?retryWrites=true&w=majority&appName=makertdata';
 
 // Global variable to track connection state
 let isConnected = false;
@@ -16,7 +16,7 @@ export const connectToDatabase = async () => {
   try {
     const db = await mongoose.connect(MONGODB_URI);
     isConnected = !!db.connections[0].readyState;
-    console.log('MongoDB connected successfully');
+    console.log('MongoDB connected successfully to stock_data database');
   } catch (error) {
     console.error('MongoDB connection error:', error);
     toast({

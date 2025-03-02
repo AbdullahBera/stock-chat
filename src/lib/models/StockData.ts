@@ -28,5 +28,20 @@ const stockDataSchema = new mongoose.Schema({
 // Create an index on the symbol field for faster queries
 stockDataSchema.index({ symbol: 1 });
 
-// Create and export the model if it doesn't already exist
-export const StockDataModel = mongoose.models.StockData || mongoose.model('StockData', stockDataSchema);
+// Create and export the model with the correct collection name
+export const StockDataModel = mongoose.models.market_prices_master || 
+  mongoose.model('market_prices_master', stockDataSchema, 'market_prices_master');
+
+// Add a model for the news collection
+const stockNewsSchema = new mongoose.Schema({
+  symbol: String,
+  title: String,
+  source: String,
+  date: Date,
+  snippet: String,
+  url: String,
+  sentiment: String,
+});
+
+export const StockNewsModel = mongoose.models.stock_news_master || 
+  mongoose.model('stock_news_master', stockNewsSchema, 'stock_news_master');

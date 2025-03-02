@@ -1,7 +1,6 @@
-
 import axios from 'axios';
 import { connectToDatabase } from './db/mongodb';
-import { StockDataModel } from './models/StockData';
+import { StockDataModel, StockNewsModel } from './models/StockData';
 import { toast } from '@/components/ui/use-toast';
 
 // Type definitions
@@ -153,7 +152,7 @@ export async function fetchStockData(symbol: string): Promise<StockData> {
     await connectToDatabase();
     
     // Check if we have recent data in MongoDB
-    const cachedData = await StockDataModel.findOne({ symbol }).exec();
+    const cachedData = await StockDataModel.findOne({ symbol }).lean();
     
     if (cachedData && !isDataStale(new Date(cachedData.lastUpdated))) {
       console.log(`Using cached data for ${symbol}`);
@@ -185,7 +184,7 @@ export async function fetchStockData(symbol: string): Promise<StockData> {
         { symbol },
         { ...freshData, lastUpdated: new Date() },
         { upsert: true, new: true }
-      ).exec();
+      );
       
       return freshData;
     } catch (apiError) {
@@ -223,7 +222,7 @@ export async function fetchStockData(symbol: string): Promise<StockData> {
           { symbol },
           { ...mockData, lastUpdated: new Date() },
           { upsert: true, new: true }
-        ).exec();
+        );
       } catch (dbError) {
         console.error('Failed to cache mock data:', dbError);
       }
@@ -413,10 +412,38 @@ export async function fetchHistoricalData(symbol: string, period: '1d' | '1w' | 
   return generateHistoricalData(dataPoints, trend);
 }
 
+// Fetch news from the actual database
 export async function fetchNewsForStock(symbol: string): Promise<NewsItem[]> {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 1200));
-  return generateNewsItems(symbol, 10);
+  try {
+    await connectToDatabase();
+    
+    // Try to get news from our MongoDB
+    const news = await StockNewsModel.find({ symbol })
+      .sort({ date: -1 })
+      .limit(10)
+      .lean();
+    
+    if (news && news.length > 0) {
+      return news.map(item => ({
+        id: item._id.toString(),
+        title: item.title || '',
+        source: item.source || '',
+        date: new Date(item.date).toISOString().split('T')[0],
+        snippet: item.snippet || '',
+        url: item.url || '#',
+        sentiment: item.sentiment as 'positive' | 'negative' | 'neutral'
+      }));
+    }
+    
+    // If no news found, use mock data
+    console.log('No news found in database, using mock data');
+    return generateNewsItems(symbol, 10);
+  } catch (error) {
+    console.error('Error fetching news from database:', error);
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 1200));
+    return generateNewsItems(symbol, 10);
+  }
 }
 
 export async function fetchSentimentAnalysis(symbol: string): Promise<SentimentData> {
