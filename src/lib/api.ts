@@ -1,7 +1,9 @@
+import axios from 'axios';
+import { connectToDatabase } from './db/mongodb';
+import { StockDataModel } from './models/StockData';
+import { toast } from '@/components/ui/use-toast';
 
-// This is a mock API service for demonstration purposes
-// In a real app, you would integrate with actual financial APIs
-
+// Type definitions
 export interface StockData {
   symbol: string;
   name: string;
@@ -49,7 +51,67 @@ export interface SentimentData {
   }>;
 }
 
-// Mock data generator functions
+// MarketStack API key - should be stored securely in production
+const MARKETSTACK_API_KEY = 'your_marketstack_api_key_here';
+const MARKETSTACK_BASE_URL = 'http://api.marketstack.com/v1';
+
+// Check if data is stale (older than 15 minutes)
+const isDataStale = (lastUpdated: Date) => {
+  const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
+  return lastUpdated < fifteenMinutesAgo;
+};
+
+// Fetch data from MarketStack API
+async function fetchFromMarketStack(symbol: string): Promise<StockData> {
+  try {
+    // Get end-of-day data
+    const response = await axios.get(`${MARKETSTACK_BASE_URL}/eod/latest`, {
+      params: {
+        access_key: MARKETSTACK_API_KEY,
+        symbols: symbol
+      }
+    });
+
+    // Extract relevant data
+    const stockData = response.data.data[0];
+    
+    // Get company data for additional details
+    const companyResponse = await axios.get(`${MARKETSTACK_BASE_URL}/tickers/${symbol}`, {
+      params: {
+        access_key: MARKETSTACK_API_KEY
+      }
+    });
+    
+    const companyData = companyResponse.data;
+    
+    // Calculate change and percent change
+    const previousClose = stockData.close - stockData.change;
+    const changePercent = (stockData.change / previousClose) * 100;
+    
+    // Create formatted stock data object
+    const formattedData: StockData = {
+      symbol: stockData.symbol,
+      name: companyData.name || `${symbol} Corporation`,
+      price: stockData.close,
+      change: stockData.change,
+      changePercent: changePercent,
+      open: stockData.open,
+      high: stockData.high,
+      low: stockData.low,
+      volume: stockData.volume,
+      marketCap: companyData.market_cap || 0,
+      pe: companyData.pe_ratio || 0,
+      dividend: companyData.dividend_yield || 0
+    };
+    
+    return formattedData;
+  } catch (error) {
+    console.error('Error fetching from MarketStack:', error);
+    throw new Error('Failed to fetch market data from MarketStack');
+  }
+}
+
+// Fallback to mock data if API or DB fails
 function generateMockStockData(symbol: string): StockData {
   const stockNames: Record<string, string> = {
     'AAPL': 'Apple Inc.',
@@ -83,6 +145,79 @@ function generateMockStockData(symbol: string): StockData {
   };
 }
 
+// Main function to fetch stock data with cache support
+export async function fetchStockData(symbol: string): Promise<StockData> {
+  try {
+    // Try to connect to MongoDB
+    await connectToDatabase();
+    
+    // Check if we have recent data in MongoDB
+    const cachedData = await StockDataModel.findOne({ symbol });
+    
+    if (cachedData && !isDataStale(cachedData.lastUpdated)) {
+      console.log(`Using cached data for ${symbol}`);
+      return cachedData;
+    }
+    
+    // If no cached data or it's stale, fetch fresh data
+    console.log(`Fetching fresh data for ${symbol}`);
+    
+    try {
+      // Try to fetch from MarketStack
+      const freshData = await fetchFromMarketStack(symbol);
+      
+      // Update or insert data in MongoDB
+      await StockDataModel.findOneAndUpdate(
+        { symbol },
+        { ...freshData, lastUpdated: new Date() },
+        { upsert: true, new: true }
+      );
+      
+      return freshData;
+    } catch (apiError) {
+      console.error('API Error:', apiError);
+      
+      // If we have stale cached data, use it as fallback
+      if (cachedData) {
+        toast({
+          title: "Using cached data",
+          description: "Could not fetch fresh data. Using previously cached data.",
+          variant: "warning",
+        });
+        return cachedData;
+      }
+      
+      // Last resort: use mock data
+      const mockData = generateMockStockData(symbol);
+      
+      // Still try to cache the mock data
+      try {
+        await StockDataModel.findOneAndUpdate(
+          { symbol },
+          { ...mockData, lastUpdated: new Date() },
+          { upsert: true, new: true }
+        );
+      } catch (dbError) {
+        console.error('Failed to cache mock data:', dbError);
+      }
+      
+      return mockData;
+    }
+  } catch (dbConnectionError) {
+    console.error('Database connection error:', dbConnectionError);
+    
+    // Fallback to mock data if DB connection fails
+    toast({
+      title: "Connection Error",
+      description: "Using simulated data due to connection issues.",
+      variant: "destructive",
+    });
+    
+    return generateMockStockData(symbol);
+  }
+}
+
+// Mock data generator functions
 function generateHistoricalData(periods: number, trend: 'up' | 'down' | 'volatile'): HistoricalDataPoint[] {
   const data: HistoricalDataPoint[] = [];
   const today = new Date();
@@ -213,12 +348,6 @@ function generateSentimentData(newsItems: NewsItem[]): SentimentData {
 }
 
 // API mock functions
-export async function fetchStockData(symbol: string): Promise<StockData> {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 800));
-  return generateMockStockData(symbol);
-}
-
 export async function fetchHistoricalData(symbol: string, period: '1d' | '1w' | '1m' | '3m' | '1y' | '5y'): Promise<HistoricalDataPoint[]> {
   // Simulate API delay
   await new Promise(resolve => setTimeout(resolve, 1000));
