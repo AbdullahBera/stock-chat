@@ -10,6 +10,7 @@ let isConnected = false;
 
 export const connectToDatabase = async () => {
   if (isConnected) {
+    console.log('Already connected to MongoDB');
     return;
   }
 
@@ -17,8 +18,12 @@ export const connectToDatabase = async () => {
     // Set strict query mode to false to avoid warnings
     mongoose.set('strictQuery', false);
     
-    const db = await mongoose.connect(MONGODB_URI);
-    isConnected = !!db.connections[0].readyState;
+    // Connect to MongoDB
+    await mongoose.connect(MONGODB_URI);
+    
+    // Update connection status
+    isConnected = !!mongoose.connection.readyState;
+    
     console.log('MongoDB connected successfully to stock_data database');
   } catch (error) {
     console.error('MongoDB connection error:', error);
