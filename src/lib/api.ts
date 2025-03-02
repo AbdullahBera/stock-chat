@@ -1,3 +1,4 @@
+
 import axios from 'axios';
 import { connectToDatabase } from './db/mongodb';
 import { StockDataModel, StockNewsModel } from './models/StockData';
@@ -151,8 +152,13 @@ export async function fetchStockData(symbol: string): Promise<StockData> {
     // Try to connect to MongoDB
     await connectToDatabase();
     
-    // Check if we have recent data in MongoDB
-    const cachedData = await StockDataModel.findOne({ symbol }).lean().exec();
+    // Check if we have recent data in MongoDB - using callback style to avoid TypeScript issues
+    const cachedData = await new Promise((resolve, reject) => {
+      StockDataModel.findOne({ symbol }).lean().exec((err: any, result: any) => {
+        if (err) reject(err);
+        else resolve(result);
+      });
+    });
     
     if (cachedData && !isDataStale(new Date(cachedData.lastUpdated))) {
       console.log(`Using cached data for ${symbol}`);
@@ -179,13 +185,19 @@ export async function fetchStockData(symbol: string): Promise<StockData> {
       // Try to fetch from MarketStack
       const freshData = await fetchFromMarketStack(symbol);
       
-      // Update or insert data in MongoDB
+      // Update or insert data in MongoDB - using callback style to avoid TypeScript issues
       try {
-        await StockDataModel.findOneAndUpdate(
-          { symbol },
-          { ...freshData, lastUpdated: new Date() },
-          { upsert: true, new: true }
-        ).exec();
+        await new Promise((resolve, reject) => {
+          StockDataModel.findOneAndUpdate(
+            { symbol },
+            { ...freshData, lastUpdated: new Date() },
+            { upsert: true, new: true },
+            (err: any, result: any) => {
+              if (err) reject(err);
+              else resolve(result);
+            }
+          );
+        });
       } catch (dbUpdateError) {
         console.error('Failed to update MongoDB:', dbUpdateError);
       }
@@ -220,13 +232,19 @@ export async function fetchStockData(symbol: string): Promise<StockData> {
       // Last resort: use mock data
       const mockData = generateMockStockData(symbol);
       
-      // Still try to cache the mock data
+      // Still try to cache the mock data - using callback style to avoid TypeScript issues
       try {
-        await StockDataModel.findOneAndUpdate(
-          { symbol },
-          { ...mockData, lastUpdated: new Date() },
-          { upsert: true, new: true }
-        ).exec();
+        await new Promise((resolve, reject) => {
+          StockDataModel.findOneAndUpdate(
+            { symbol },
+            { ...mockData, lastUpdated: new Date() },
+            { upsert: true, new: true },
+            (err: any, result: any) => {
+              if (err) reject(err);
+              else resolve(result);
+            }
+          );
+        });
       } catch (dbError) {
         console.error('Failed to cache mock data:', dbError);
       }
@@ -421,12 +439,17 @@ export async function fetchNewsForStock(symbol: string): Promise<NewsItem[]> {
   try {
     await connectToDatabase();
     
-    // Try to get news from our MongoDB
-    const news = await StockNewsModel.find({ symbol })
-      .sort({ date: -1 })
-      .limit(10)
-      .lean()
-      .exec();
+    // Try to get news from our MongoDB - using callback style to avoid TypeScript issues
+    const news = await new Promise((resolve, reject) => {
+      StockNewsModel.find({ symbol })
+        .sort({ date: -1 })
+        .limit(10)
+        .lean()
+        .exec((err: any, result: any) => {
+          if (err) reject(err);
+          else resolve(result);
+        });
+    });
     
     if (news && news.length > 0) {
       return news.map(item => ({

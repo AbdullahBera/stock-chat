@@ -2,7 +2,7 @@
 import mongoose from 'mongoose';
 import { toast } from '@/components/ui/use-toast';
 
-// MongoDB connection string - ideally should be in environment variables
+// MongoDB connection string
 const MONGODB_URI = 'mongodb+srv://abdullahberakucuk:dJY5Dt1zrYmmsV6Q@makertdata.iinrc.mongodb.net/stock_data?retryWrites=true&w=majority&appName=makertdata';
 
 // Global variable to track connection state
