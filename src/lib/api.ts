@@ -1,7 +1,6 @@
-
 import axios from 'axios';
 import { connectToDatabase } from './db/mongodb';
-import { StockDataModel, StockNewsModel } from './models/StockData';
+import { StockDataModel, StockNewsModel, IStockData, IStockNews } from './models/StockData';
 import { toast } from '@/components/ui/use-toast';
 
 // Type definitions
@@ -152,13 +151,8 @@ export async function fetchStockData(symbol: string): Promise<StockData> {
     // Try to connect to MongoDB
     await connectToDatabase();
     
-    // Check if we have recent data in MongoDB - using callback style to avoid TypeScript issues
-    const cachedData = await new Promise((resolve, reject) => {
-      StockDataModel.findOne({ symbol }).lean().exec((err: any, result: any) => {
-        if (err) reject(err);
-        else resolve(result);
-      });
-    });
+    // Check if we have recent data in MongoDB
+    const cachedData = await StockDataModel.findOne({ symbol }).exec();
     
     if (cachedData && !isDataStale(new Date(cachedData.lastUpdated))) {
       console.log(`Using cached data for ${symbol}`);
@@ -185,22 +179,12 @@ export async function fetchStockData(symbol: string): Promise<StockData> {
       // Try to fetch from MarketStack
       const freshData = await fetchFromMarketStack(symbol);
       
-      // Update or insert data in MongoDB - using callback style to avoid TypeScript issues
-      try {
-        await new Promise((resolve, reject) => {
-          StockDataModel.findOneAndUpdate(
-            { symbol },
-            { ...freshData, lastUpdated: new Date() },
-            { upsert: true, new: true },
-            (err: any, result: any) => {
-              if (err) reject(err);
-              else resolve(result);
-            }
-          );
-        });
-      } catch (dbUpdateError) {
-        console.error('Failed to update MongoDB:', dbUpdateError);
-      }
+      // Update or insert data in MongoDB
+      await StockDataModel.findOneAndUpdate(
+        { symbol },
+        { ...freshData, lastUpdated: new Date() },
+        { upsert: true, new: true }
+      ).exec();
       
       return freshData;
     } catch (apiError) {
@@ -232,22 +216,12 @@ export async function fetchStockData(symbol: string): Promise<StockData> {
       // Last resort: use mock data
       const mockData = generateMockStockData(symbol);
       
-      // Still try to cache the mock data - using callback style to avoid TypeScript issues
-      try {
-        await new Promise((resolve, reject) => {
-          StockDataModel.findOneAndUpdate(
-            { symbol },
-            { ...mockData, lastUpdated: new Date() },
-            { upsert: true, new: true },
-            (err: any, result: any) => {
-              if (err) reject(err);
-              else resolve(result);
-            }
-          );
-        });
-      } catch (dbError) {
-        console.error('Failed to cache mock data:', dbError);
-      }
+      // Still try to cache the mock data
+      await StockDataModel.findOneAndUpdate(
+        { symbol },
+        { ...mockData, lastUpdated: new Date() },
+        { upsert: true, new: true }
+      ).exec();
       
       return mockData;
     }
@@ -355,21 +329,17 @@ function generateNewsItems(symbol: string, count: number): NewsItem[] {
 }
 
 function generateSentimentData(newsItems: NewsItem[]): SentimentData {
-  // Count sentiments
   const positiveCount = newsItems.filter(item => item.sentiment === 'positive').length;
   const negativeCount = newsItems.filter(item => item.sentiment === 'negative').length;
   const neutralCount = newsItems.filter(item => item.sentiment === 'neutral').length;
   
-  // Calculate overall score (-100 to 100)
   const totalItems = newsItems.length;
   const sentimentScore = ((positiveCount - negativeCount) / totalItems) * 100;
   
-  // Determine overall label
   let overallLabel: 'positive' | 'negative' | 'neutral' = 'neutral';
   if (sentimentScore > 20) overallLabel = 'positive';
   if (sentimentScore < -20) overallLabel = 'negative';
   
-  // Generate keywords with sentiment scores
   const keywords = [
     { word: 'growth', score: Math.random() * 100 - 50, occurrences: Math.floor(Math.random() * 10) + 1 },
     { word: 'revenue', score: Math.random() * 100 - 50, occurrences: Math.floor(Math.random() * 10) + 1 },
@@ -397,13 +367,11 @@ function generateSentimentData(newsItems: NewsItem[]): SentimentData {
 
 // API mock functions
 export async function fetchHistoricalData(symbol: string, period: '1d' | '1w' | '1m' | '3m' | '1y' | '5y'): Promise<HistoricalDataPoint[]> {
-  // Simulate API delay
   await new Promise(resolve => setTimeout(resolve, 1000));
   
   let dataPoints = 0;
   let trend: 'up' | 'down' | 'volatile' = 'volatile';
   
-  // Random trend with a bias
   const randomValue = Math.random();
   if (randomValue > 0.6) trend = 'up';
   else if (randomValue > 0.3) trend = 'down';
@@ -434,25 +402,18 @@ export async function fetchHistoricalData(symbol: string, period: '1d' | '1w' | 
   return generateHistoricalData(dataPoints, trend);
 }
 
-// Fetch news from the actual database
 export async function fetchNewsForStock(symbol: string): Promise<NewsItem[]> {
   try {
     await connectToDatabase();
     
-    // Try to get news from our MongoDB - using callback style to avoid TypeScript issues
-    const news = await new Promise((resolve, reject) => {
-      StockNewsModel.find({ symbol })
-        .sort({ date: -1 })
-        .limit(10)
-        .lean()
-        .exec((err: any, result: any) => {
-          if (err) reject(err);
-          else resolve(result);
-        });
-    });
+    const news = await StockNewsModel.find({ symbol })
+      .sort({ date: -1 })
+      .limit(10)
+      .lean()
+      .exec();
     
     if (news && news.length > 0) {
-      return news.map(item => ({
+      return news.map((item: any) => ({
         id: item._id.toString(),
         title: item.title || '',
         source: item.source || '',
@@ -463,19 +424,16 @@ export async function fetchNewsForStock(symbol: string): Promise<NewsItem[]> {
       }));
     }
     
-    // If no news found, use mock data
     console.log('No news found in database, using mock data');
     return generateNewsItems(symbol, 10);
   } catch (error) {
     console.error('Error fetching news from database:', error);
-    // Simulate API delay
     await new Promise(resolve => setTimeout(resolve, 1200));
     return generateNewsItems(symbol, 10);
   }
 }
 
 export async function fetchSentimentAnalysis(symbol: string): Promise<SentimentData> {
-  // Simulate API delay
   await new Promise(resolve => setTimeout(resolve, 1500));
   const news = generateNewsItems(symbol, 20);
   return generateSentimentData(news);
