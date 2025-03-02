@@ -1,5 +1,5 @@
 
-import mongoose, { Document, Schema, model, models, Model } from 'mongoose';
+import mongoose, { Document, Schema, model, Model } from 'mongoose';
 
 // Define interfaces for our models
 export interface IStockData extends Document {
@@ -109,11 +109,21 @@ const stockNewsSchema = new Schema<IStockNews>({
   sentiment: String,
 });
 
-// Check if models already exist before creating new ones to prevent model overwriting errors
-export const StockDataModel: Model<IStockData> = 
-  (models.market_prices_master as Model<IStockData>) || 
-  model<IStockData>('market_prices_master', stockDataSchema, 'market_prices_master');
+// Use a more reliable approach to check for existing models
+let StockDataModel: Model<IStockData>;
+let StockNewsModel: Model<IStockNews>;
 
-export const StockNewsModel: Model<IStockNews> = 
-  (models.stock_news_master as Model<IStockNews>) || 
-  model<IStockNews>('stock_news_master', stockNewsSchema, 'stock_news_master');
+// Check if the models already exist in mongoose.models
+if (mongoose.models && mongoose.models.market_prices_master) {
+  StockDataModel = mongoose.models.market_prices_master as Model<IStockData>;
+} else {
+  StockDataModel = mongoose.model<IStockData>('market_prices_master', stockDataSchema, 'market_prices_master');
+}
+
+if (mongoose.models && mongoose.models.stock_news_master) {
+  StockNewsModel = mongoose.models.stock_news_master as Model<IStockNews>;
+} else {
+  StockNewsModel = mongoose.model<IStockNews>('stock_news_master', stockNewsSchema, 'stock_news_master');
+}
+
+export { StockDataModel, StockNewsModel };
