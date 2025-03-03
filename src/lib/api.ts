@@ -1,7 +1,8 @@
+console.log('All env variables:', import.meta.env);
+console.log('Polygon API Key:', import.meta.env.VITE_POLYGON_API_KEY);
 
 // This is a mock API service for demonstration purposes
 // In a real app, you would integrate with actual financial APIs
-
 export interface StockData {
   symbol: string;
   name: string;
@@ -212,11 +213,55 @@ function generateSentimentData(newsItems: NewsItem[]): SentimentData {
   };
 }
 
-// API mock functions
+// Add API configuration
+const BASE_URL = 'https://api.polygon.io/v2';
+const POLYGON_API_KEY = import.meta.env.VITE_POLYGON_API_KEY;
+
 export async function fetchStockData(symbol: string): Promise<StockData> {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 800));
-  return generateMockStockData(symbol);
+  if (!POLYGON_API_KEY) {
+    throw new Error('API key not found. Please set VITE_POLYGON_API_KEY in your .env file');
+  }
+
+  try {
+    // Get previous close data
+    const priceUrl = `${BASE_URL}/aggs/ticker/${symbol}/prev?adjusted=true&apiKey=${POLYGON_API_KEY}`;
+    const priceResponse = await fetch(priceUrl);
+    const priceData = await priceResponse.json();
+    
+    console.log('Price Response:', priceData);
+
+    // Get ticker details
+    const detailsUrl = `${BASE_URL}/snapshot/locale/us/markets/stocks/tickers/${symbol}?apiKey=${POLYGON_API_KEY}`;
+    const detailsResponse = await fetch(detailsUrl);
+    const detailsData = await detailsResponse.json();
+    
+    console.log('Details Response:', detailsData);
+
+    if (!priceData.results?.[0]) {
+      throw new Error('Invalid price data from Polygon API');
+    }
+
+    const quote = priceData.results[0];
+    const details = detailsData.ticker;
+    
+    return {
+      symbol: symbol,
+      name: details?.name || symbol,
+      price: quote.c,
+      change: quote.c - quote.o,
+      changePercent: ((quote.c - quote.o) / quote.o) * 100,
+      open: quote.o,
+      high: quote.h,
+      low: quote.l,
+      volume: quote.v,
+      marketCap: details?.market_cap || 0,
+      pe: details?.pe_ratio || 0,
+      dividend: details?.dividend_yield || 0,
+    };
+  } catch (error) {
+    console.error('Error fetching stock data:', error);
+    throw error;
+  }
 }
 
 export async function fetchHistoricalData(symbol: string, period: '1d' | '1w' | '1m' | '3m' | '1y' | '5y'): Promise<HistoricalDataPoint[]> {
