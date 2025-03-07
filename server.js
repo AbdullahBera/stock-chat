@@ -6,35 +6,46 @@ import { dirname } from 'path';
 import fetch from 'node-fetch';
 import cors from 'cors';
 
-// Initialize dotenv
-dotenv.config();
+// Initialize dotenv (only in development)
+if (process.env.NODE_ENV !== 'production') {
+  dotenv.config();
+}
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Enable CORS for your frontend domain
-app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? process.env.FRONTEND_URL || 'https://your-frontend-url.com'
-    : 'http://localhost:8080',
-  credentials: true
-}));
+// API Constants
+const BASE_URL = 'https://api.polygon.io/v2';
+const POLYGON_API_KEY = process.env.VITE_POLYGON_API_KEY;
+const MONGODB_URI = process.env.MONGODB_URI;
+const MONGODB_DB = process.env.MONGODB_DB || 'stock_data';
 
+// Validate required environment variables
+const requiredEnvVars = ['MONGODB_URI', 'VITE_POLYGON_API_KEY'];
+const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar]);
+
+if (missingEnvVars.length > 0) {
+  console.error('Missing required environment variables:', missingEnvVars);
+  process.exit(1);
+}
+
+// CORS configuration
+const corsOptions = {
+  origin: process.env.NODE_ENV === 'production'
+    ? [process.env.FRONTEND_URL || 'https://your-frontend-url.com']
+    : ['http://localhost:8080', 'http://localhost:5173'],
+  credentials: true,
+  methods: ['GET', 'POST'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
-
-// MongoDB connection
-const MONGODB_URI = process.env.MONGODB_URI;
-const MONGODB_DB = process.env.MONGODB_DB || 'stock_data';
-const POLYGON_API_KEY = process.env.VITE_POLYGON_API_KEY;
-
-console.log('MongoDB URI:', MONGODB_URI ? 'Set' : 'Not set');
-console.log('MongoDB DB:', MONGODB_DB);
-console.log('Polygon API Key:', POLYGON_API_KEY ? 'Set' : 'Not set');
 
 let cachedClient = null;
 
@@ -117,7 +128,6 @@ app.get('/api/stocks/fetch/:symbol', async (req, res) => {
 
   try {
     const symbol = req.params.symbol;
-    const BASE_URL = 'https://api.polygon.io/v2';
 
     // Get previous close data
     console.log('Fetching price data from Polygon API...');
@@ -183,6 +193,118 @@ app.get('/api/stocks/fetch/:symbol', async (req, res) => {
     res.status(500).json({ 
       error: 'Failed to fetch stock data',
       details: error.message
+    });
+  }
+});
+
+// Helper function to get time range based on period
+function getTimeRange(period) {
+  const now = new Date();
+  const from = new Date();
+  
+  switch (period) {
+    case '1d':
+      from.setDate(now.getDate() - 1);
+      break;
+    case '1w':
+      from.setDate(now.getDate() - 7);
+      break;
+    case '1m':
+      from.setMonth(now.getMonth() - 1);
+      break;
+    case '3m':
+      from.setMonth(now.getMonth() - 3);
+      break;
+    case '1y':
+      from.setFullYear(now.getFullYear() - 1);
+      break;
+    case '5y':
+      from.setFullYear(now.getFullYear() - 5);
+      break;
+    default:
+      from.setMonth(now.getMonth() - 1);
+  }
+
+  // Ensure 'to' date is not in the future
+  const to = new Date(Math.min(now.getTime(), Date.now()));
+
+  // Get the timespan and multiplier based on period
+  let timespan = 'day';
+  let multiplier = 1;
+
+  switch (period) {
+    case '1d':
+      timespan = 'minute';
+      multiplier = 5;
+      break;
+    case '1w':
+      timespan = 'hour';
+      break;
+    case '5y':
+      timespan = 'week';
+      break;
+  }
+
+  return { from, to, multiplier, timespan };
+}
+
+// Add this new endpoint before the server.listen() call
+app.get('/api/stocks/:symbol/history/:period', async (req, res) => {
+  console.log('GET /api/stocks/:symbol/history/:period - Fetching historical data:', req.params);
+  
+  if (!POLYGON_API_KEY) {
+    console.error('Polygon API key not configured');
+    return res.status(500).json({ error: 'API key not configured' });
+  }
+
+  try {
+    const { symbol, period } = req.params;
+    const { from, to, multiplier, timespan } = getTimeRange(period);
+    
+    // Format dates for Polygon API
+    const fromDate = from.toISOString().split('T')[0];
+    const toDate = to.toISOString().split('T')[0];
+    
+    console.log('Fetching historical data with params:', { symbol, fromDate, toDate, multiplier, timespan });
+    
+    const url = `${BASE_URL}/aggs/ticker/${symbol}/range/${multiplier}/${timespan}/${fromDate}/${toDate}?adjusted=true&sort=asc&limit=50000&apiKey=${POLYGON_API_KEY}`;
+    
+    console.log('Fetching from URL:', url);
+    const response = await fetch(url);
+    const data = await response.json();
+    
+    // Log the raw response for debugging
+    console.log('Raw API response:', data);
+
+    if (data.status === 'ERROR') {
+      console.error('Polygon API error:', data);
+      return res.status(500).json({ error: data.error || 'API error' });
+    }
+    
+    if (!data.results || !Array.isArray(data.results)) {
+      console.error('Invalid or empty response from Polygon API:', data);
+      return res.status(404).json({ error: 'Historical data not found' });
+    }
+    
+    // Transform the data into the format expected by the frontend
+    const historicalData = data.results.map(item => ({
+      date: new Date(item.t).toISOString(),
+      close: parseFloat(item.c.toFixed(2))  // Ensure price is properly formatted
+    }));
+    
+    if (historicalData.length === 0) {
+      console.log('No historical data points found');
+      return res.status(404).json({ error: 'No historical data available for this period' });
+    }
+    
+    console.log(`Returning ${historicalData.length} historical data points. First point:`, historicalData[0], 'Last point:', historicalData[historicalData.length - 1]);
+    res.json(historicalData);
+  } catch (error) {
+    console.error('Error fetching historical data:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch historical data',
+      details: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 });
