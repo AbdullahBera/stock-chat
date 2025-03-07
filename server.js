@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import fetch from 'node-fetch';
+import cors from 'cors';
 
 // Initialize dotenv
 dotenv.config();
@@ -11,7 +12,20 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 3000;
 
+// Enable CORS for your frontend domain
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production' 
+    ? process.env.FRONTEND_URL || 'https://your-frontend-url.com'
+    : 'http://localhost:8080',
+  credentials: true
+}));
+
 app.use(express.json());
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok' });
+});
 
 // MongoDB connection
 const MONGODB_URI = process.env.MONGODB_URI;
@@ -40,6 +54,15 @@ async function connectToDatabase() {
     throw error;
   }
 }
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ 
+    error: 'Internal Server Error',
+    message: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
+  });
+});
 
 // API Routes
 app.get('/api/stocks/:symbol', async (req, res) => {
@@ -103,12 +126,18 @@ app.get('/api/stocks/fetch/:symbol', async (req, res) => {
     const priceData = await priceResponse.json();
     console.log('Price data response:', priceData);
     
-    // Get ticker details
+    // Get ticker details using v3 endpoint for more detailed data
     console.log('Fetching ticker details from Polygon API...');
-    const detailsUrl = `${BASE_URL}/snapshot/locale/us/markets/stocks/tickers/${symbol}?apiKey=${POLYGON_API_KEY}`;
+    const detailsUrl = `https://api.polygon.io/v3/reference/tickers/${symbol}?apiKey=${POLYGON_API_KEY}`;
     const detailsResponse = await fetch(detailsUrl);
     const detailsData = await detailsResponse.json();
     console.log('Details data response:', detailsData);
+
+    // Get current quote data for market cap
+    const quoteUrl = `${BASE_URL}/snapshot/locale/us/markets/stocks/tickers/${symbol}?apiKey=${POLYGON_API_KEY}`;
+    const quoteResponse = await fetch(quoteUrl);
+    const quoteData = await quoteResponse.json();
+    console.log('Quote data response:', quoteData);
 
     if (!priceData.results?.[0]) {
       console.error('No price data found for symbol:', symbol);
@@ -116,11 +145,12 @@ app.get('/api/stocks/fetch/:symbol', async (req, res) => {
     }
 
     const quote = priceData.results[0];
-    const details = detailsData.ticker;
+    const details = detailsData.results;
+    const marketData = quoteData.ticker;
     
     const stockData = {
       symbol: symbol,
-      name: details?.name || `${symbol} Corporation`,
+      name: details?.name || marketData?.name || `${symbol} Corporation`,
       price: quote.c,
       change: quote.c - quote.o,
       changePercent: ((quote.c - quote.o) / quote.o) * 100,
@@ -128,9 +158,9 @@ app.get('/api/stocks/fetch/:symbol', async (req, res) => {
       high: quote.h,
       low: quote.l,
       volume: quote.v,
-      marketCap: details?.market_cap || 0,
-      pe: details?.pe_ratio || 0,
-      dividend: details?.dividend_yield || 0,
+      marketCap: marketData?.market_cap || details?.market_cap || 0,
+      pe: marketData?.pe_ratio || details?.pe_ratio || 0,
+      dividend: details?.dividend_yield || marketData?.dividend_yield || 0,
       timestamp: Date.now()
     };
 
@@ -157,6 +187,8 @@ app.get('/api/stocks/fetch/:symbol', async (req, res) => {
   }
 });
 
+// Start the server
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
+  console.log('Environment:', process.env.NODE_ENV || 'development');
 }); 

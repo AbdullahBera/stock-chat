@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { StockData, fetchStockData } from '../lib/api';
@@ -44,9 +43,20 @@ const StockDetails: React.FC<StockDetailsProps> = ({ symbol }) => {
       return `$${(marketCap / 1_000_000_000).toFixed(2)}B`;
     } else if (marketCap >= 1_000_000) {
       return `$${(marketCap / 1_000_000).toFixed(2)}M`;
-    } else {
+    } else if (marketCap > 0) {
       return `$${formatNumber(marketCap)}`;
+    } else {
+      return 'N/A';
     }
+  };
+
+  // Format P/E ratio and dividend yield
+  const formatPE = (pe: number): string => {
+    return pe > 0 ? pe.toFixed(2) : 'N/A';
+  };
+
+  const formatDividend = (dividend: number): string => {
+    return dividend > 0 ? `${dividend.toFixed(2)}%` : 'N/A';
   };
 
   if (isLoading) {
@@ -126,12 +136,12 @@ const StockDetails: React.FC<StockDetailsProps> = ({ symbol }) => {
           
           <div className="bg-gray-50 dark:bg-gray-800/50 p-3 rounded-xl">
             <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">P/E Ratio</div>
-            <div className="text-lg font-medium">{stockData.pe.toFixed(2)}</div>
+            <div className="text-lg font-medium">{formatPE(stockData.pe)}</div>
           </div>
           
           <div className="bg-gray-50 dark:bg-gray-800/50 p-3 rounded-xl">
             <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Dividend Yield</div>
-            <div className="text-lg font-medium">{stockData.dividend.toFixed(2)}%</div>
+            <div className="text-lg font-medium">{formatDividend(stockData.dividend)}</div>
           </div>
         </div>
       </CardContent>
