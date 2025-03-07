@@ -213,11 +213,96 @@ function generateSentimentData(newsItems: NewsItem[]): SentimentData {
   };
 }
 
-// Add API configuration
 const BASE_URL = 'https://api.polygon.io/v2';
 const POLYGON_API_KEY = import.meta.env.VITE_POLYGON_API_KEY;
+const MAX_CACHE_AGE = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+
+interface CachedStockData extends StockData {
+  timestamp: number;
+}
+
+// Function to get stock data from MongoDB
+async function getStockFromDB(symbol: string): Promise<CachedStockData | null> {
+  try {
+    const response = await fetch(`/api/stocks/${symbol}`);
+    if (!response.ok) return null;
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching from database:', error);
+    return null;
+  }
+}
+
+// Function to save stock data to MongoDB
+async function saveStockToDB(data: StockData): Promise<void> {
+  try {
+    const stockData: CachedStockData = {
+      ...data,
+      timestamp: Date.now()
+    };
+    
+    await fetch('/api/stocks', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(stockData),
+    });
+  } catch (error) {
+    console.error('Error saving to database:', error);
+  }
+}
+
+// Function to check if data is stale and needs refreshing
+function isDataStale(data: CachedStockData): boolean {
+  return Date.now() - data.timestamp > MAX_CACHE_AGE;
+}
 
 export async function fetchStockData(symbol: string): Promise<StockData> {
+  // Always try to get from database first
+  const dbData = await getStockFromDB(symbol);
+  
+  if (dbData) {
+    // If we have data in the database
+    if (isDataStale(dbData)) {
+      // If data is stale, trigger a background refresh but still return cached data
+      console.log('Data is stale, triggering background refresh:', symbol);
+      refreshStockData(symbol, dbData.timestamp).catch(console.error);
+    } else {
+      console.log('Using fresh data from database:', symbol);
+    }
+    return dbData;
+  }
+  
+  // If no data in DB, fetch from API through our backend
+  console.log('No data in database, fetching from API:', symbol);
+  try {
+    const response = await fetch(`/api/stocks/fetch/${symbol}`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch stock data');
+    }
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error fetching stock data:', error);
+    throw error;
+  }
+}
+
+// Function to refresh stock data in the background
+async function refreshStockData(symbol: string, lastUpdate: number): Promise<void> {
+  try {
+    const freshData = await fetchFromAPI(symbol);
+    await saveStockToDB(freshData);
+    console.log('Background refresh completed for:', symbol);
+  } catch (error) {
+    console.error('Background refresh failed:', error);
+  }
+}
+
+// Function to fetch data from Polygon API
+async function fetchFromAPI(symbol: string): Promise<StockData> {
   if (!POLYGON_API_KEY) {
     throw new Error('API key not found. Please set VITE_POLYGON_API_KEY in your .env file');
   }
@@ -228,14 +313,10 @@ export async function fetchStockData(symbol: string): Promise<StockData> {
     const priceResponse = await fetch(priceUrl);
     const priceData = await priceResponse.json();
     
-    console.log('Price Response:', priceData);
-
     // Get ticker details
     const detailsUrl = `${BASE_URL}/snapshot/locale/us/markets/stocks/tickers/${symbol}?apiKey=${POLYGON_API_KEY}`;
     const detailsResponse = await fetch(detailsUrl);
     const detailsData = await detailsResponse.json();
-    
-    console.log('Details Response:', detailsData);
 
     if (!priceData.results?.[0]) {
       throw new Error('Invalid price data from Polygon API');
@@ -244,7 +325,7 @@ export async function fetchStockData(symbol: string): Promise<StockData> {
     const quote = priceData.results[0];
     const details = detailsData.ticker;
     
-    return {
+    const stockData: StockData = {
       symbol: symbol,
       name: details?.name || symbol,
       price: quote.c,
@@ -258,8 +339,13 @@ export async function fetchStockData(symbol: string): Promise<StockData> {
       pe: details?.pe_ratio || 0,
       dividend: details?.dividend_yield || 0,
     };
+
+    // Save to database
+    await saveStockToDB(stockData);
+    
+    return stockData;
   } catch (error) {
-    console.error('Error fetching stock data:', error);
+    console.error('Error fetching stock data from API:', error);
     throw error;
   }
 }
