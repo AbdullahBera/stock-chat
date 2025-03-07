@@ -1,3 +1,4 @@
+
 // This is a mock API service for demonstration purposes
 // In a real app, you would integrate with actual financial APIs
 
@@ -211,10 +212,6 @@ function generateSentimentData(newsItems: NewsItem[]): SentimentData {
   };
 }
 
-// Add Alpha Vantage API key
-// You should store this in an environment variable (.env file)
-const ALPHA_VANTAGE_API_KEY = process.env.NEXT_PUBLIC_ALPHA_VANTAGE_API_KEY || 'ZQ3AVATA3RR7QGNQ';
-
 // API mock functions
 export async function fetchStockData(symbol: string): Promise<StockData> {
   // Simulate API delay
@@ -261,73 +258,9 @@ export async function fetchHistoricalData(symbol: string, period: '1d' | '1w' | 
 }
 
 export async function fetchNewsForStock(symbol: string): Promise<NewsItem[]> {
-  try {
-    // Call Alpha Vantage NEWS_SENTIMENT endpoint
-    const response = await fetch(
-      `https://www.alphavantage.co/query?function=NEWS_SENTIMENT&tickers=${symbol}&apikey=${ALPHA_VANTAGE_API_KEY}`
-    );
-    
-    if (!response.ok) {
-      throw new Error(`API error: ${response.status}`);
-    }
-    
-    const data = await response.json();
-    
-    // Check for API limit messages or errors
-    if (data["Information"] || data["Note"]) {
-      console.warn("Alpha Vantage API limit or information:", data["Information"] || data["Note"]);
-      // Fall back to mock data if we hit API limits
-      return generateNewsItems(symbol, 10);
-    }
-    
-    // Handle case where API returns an error message or no feed
-    if (!data.feed || data.feed.length === 0) {
-      console.warn('No news available from Alpha Vantage for', symbol);
-      return [];
-    }
-    
-    // Map Alpha Vantage response to our NewsItem interface
-    return data.feed.map((item: any, index: number) => {
-      // Determine sentiment based on available data
-      let sentiment: 'positive' | 'negative' | 'neutral' = 'neutral';
-      
-      // If ticker sentiment data is available for this symbol
-      const tickerSentiment = item.ticker_sentiment?.find(
-        (t: any) => t.ticker.toUpperCase() === symbol.toUpperCase()
-      );
-      
-      if (tickerSentiment) {
-        const score = parseFloat(tickerSentiment.ticker_sentiment_score);
-        if (score > 0.25) sentiment = 'positive';
-        else if (score < -0.25) sentiment = 'negative';
-      } else if (item.overall_sentiment_score) {
-        // Fallback to overall sentiment if ticker-specific not available
-        const score = parseFloat(item.overall_sentiment_score);
-        if (score > 0.25) sentiment = 'positive';
-        else if (score < -0.25) sentiment = 'negative';
-      }
-      
-      // Format date properly (YYYYMMDDTHHMMSS -> YYYY-MM-DD)
-      const dateString = item.time_published || '';
-      const formattedDate = dateString.length >= 8 
-        ? `${dateString.substring(0, 4)}-${dateString.substring(4, 6)}-${dateString.substring(6, 8)}`
-        : new Date().toISOString().split('T')[0];
-      
-      return {
-        id: `news-${index}-${Date.now()}`,
-        title: item.title || `News about ${symbol}`,
-        source: item.source || 'Financial News',
-        date: formattedDate,
-        snippet: item.summary || item.description || 'No description available for this news item.',
-        url: item.url || '#',  // Ensure URL is set properly
-        sentiment
-      };
-    });
-  } catch (error) {
-    console.error('Error fetching news from Alpha Vantage:', error);
-    // Fall back to mock data on error
-    return generateNewsItems(symbol, 10);
-  }
+  // Simulate API delay
+  await new Promise(resolve => setTimeout(resolve, 1200));
+  return generateNewsItems(symbol, 10);
 }
 
 export async function fetchSentimentAnalysis(symbol: string): Promise<SentimentData> {

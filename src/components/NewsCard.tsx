@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { NewsItem, fetchNewsForStock } from '../lib/api';
@@ -110,12 +111,6 @@ const NewsCard: React.FC<NewsCardProps> = ({ symbol }) => {
                   target="_blank" 
                   rel="noopener noreferrer" 
                   className="text-xs text-primary hover:underline inline-flex items-center"
-                  onClick={(e) => {
-                    if (item.url === '#') {
-                      e.preventDefault();
-                      alert('Article link not available');
-                    }
-                  }}
                 >
                   Read more
                   <svg 
