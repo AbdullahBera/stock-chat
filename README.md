@@ -32,8 +32,15 @@ cd <YOUR_PROJECT_NAME>
 # Step 3: Install the necessary dependencies.
 npm i
 
+# Step 4: Make .env file with your POLYGON credentials and MONGODB credentials
+
+# Step 4: Start JS Server to connect with MongoDB
+node server.js
+
 # Step 4: Start the development server with auto-reloading and an instant preview.
 npm run dev
+
+# You're now running stockchat.fyi locally and it will pull from the MongoDB first and only ping the API if the data is empty.
 ```
 
 **Edit a file directly in GitHub**
