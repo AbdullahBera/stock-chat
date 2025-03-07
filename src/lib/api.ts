@@ -1,8 +1,6 @@
-console.log('All env variables:', import.meta.env);
-console.log('Polygon API Key:', import.meta.env.VITE_POLYGON_API_KEY);
-
 // This is a mock API service for demonstration purposes
 // In a real app, you would integrate with actual financial APIs
+
 export interface StockData {
   symbol: string;
   name: string;
@@ -213,153 +211,15 @@ function generateSentimentData(newsItems: NewsItem[]): SentimentData {
   };
 }
 
-const BASE_URL = 'https://api.polygon.io/v2';
-const POLYGON_API_KEY = import.meta.env.VITE_POLYGON_API_KEY;
-const MAX_CACHE_AGE = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+// Add Alpha Vantage API key
+// You should store this in an environment variable (.env file)
+const ALPHA_VANTAGE_API_KEY = process.env.NEXT_PUBLIC_ALPHA_VANTAGE_API_KEY || 'ZQ3AVATA3RR7QGNQ';
 
-interface CachedStockData extends StockData {
-  timestamp: number;
-}
-
-// Function to get stock data from MongoDB
-async function getStockFromDB(symbol: string): Promise<CachedStockData | null> {
-  try {
-    const response = await fetch(`/api/stocks/${symbol}`);
-    if (!response.ok) return null;
-    
-    return await response.json();
-  } catch (error) {
-    console.error('Error fetching from database:', error);
-    return null;
-  }
-}
-
-// Function to save stock data to MongoDB
-async function saveStockToDB(data: StockData): Promise<void> {
-  try {
-    const stockData: CachedStockData = {
-      ...data,
-      timestamp: Date.now()
-    };
-    
-    await fetch('/api/stocks', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(stockData),
-    });
-  } catch (error) {
-    console.error('Error saving to database:', error);
-  }
-}
-
-// Function to check if data is stale and needs refreshing
-function isDataStale(data: CachedStockData): boolean {
-  return Date.now() - data.timestamp > MAX_CACHE_AGE;
-}
-
+// API mock functions
 export async function fetchStockData(symbol: string): Promise<StockData> {
-  try {
-    console.log('Fetching stock data for:', symbol);
-    
-    // First try to get from database
-    const dbData = await getStockFromDB(symbol);
-    console.log('Database data:', dbData);
-    
-    if (dbData) {
-      // If we have data in the database
-      if (isDataStale(dbData)) {
-        // If data is stale, trigger a background refresh but still return cached data
-        console.log('Data is stale, triggering background refresh:', symbol);
-        refreshStockData(symbol, dbData.timestamp).catch(console.error);
-      } else {
-        console.log('Using fresh data from database:', symbol);
-      }
-      return dbData;
-    }
-    
-    // If no data in DB, fetch from API
-    console.log('No data in database, fetching from API:', symbol);
-    const response = await fetch(`/api/stocks/fetch/${symbol}`);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch stock data: ${response.statusText}`);
-    }
-    const data = await response.json();
-    console.log('API response:', data);
-    
-    // Save the data to MongoDB
-    await saveStockToDB(data);
-    
-    return data;
-  } catch (error) {
-    console.error('Error fetching stock data:', error);
-    throw error;
-  }
-}
-
-// Function to refresh stock data in the background
-async function refreshStockData(symbol: string, lastUpdate: number): Promise<void> {
-  try {
-    const response = await fetch(`/api/stocks/fetch/${symbol}`);
-    if (!response.ok) {
-      throw new Error('Failed to fetch stock data');
-    }
-    const freshData = await response.json();
-    await saveStockToDB(freshData);
-    console.log('Background refresh completed for:', symbol);
-  } catch (error) {
-    console.error('Background refresh failed:', error);
-  }
-}
-
-// Function to fetch data from Polygon API
-async function fetchFromAPI(symbol: string): Promise<StockData> {
-  if (!POLYGON_API_KEY) {
-    throw new Error('API key not found. Please set VITE_POLYGON_API_KEY in your .env file');
-  }
-
-  try {
-    // Get previous close data
-    const priceUrl = `${BASE_URL}/aggs/ticker/${symbol}/prev?adjusted=true&apiKey=${POLYGON_API_KEY}`;
-    const priceResponse = await fetch(priceUrl);
-    const priceData = await priceResponse.json();
-    
-    // Get ticker details
-    const detailsUrl = `${BASE_URL}/snapshot/locale/us/markets/stocks/tickers/${symbol}?apiKey=${POLYGON_API_KEY}`;
-    const detailsResponse = await fetch(detailsUrl);
-    const detailsData = await detailsResponse.json();
-
-    if (!priceData.results?.[0]) {
-      throw new Error('Invalid price data from Polygon API');
-    }
-
-    const quote = priceData.results[0];
-    const details = detailsData.ticker;
-    
-    const stockData: StockData = {
-      symbol: symbol,
-      name: details?.name || symbol,
-      price: quote.c,
-      change: quote.c - quote.o,
-      changePercent: ((quote.c - quote.o) / quote.o) * 100,
-      open: quote.o,
-      high: quote.h,
-      low: quote.l,
-      volume: quote.v,
-      marketCap: details?.market_cap || 0,
-      pe: details?.pe_ratio || 0,
-      dividend: details?.dividend_yield || 0,
-    };
-
-    // Save to database
-    await saveStockToDB(stockData);
-    
-    return stockData;
-  } catch (error) {
-    console.error('Error fetching stock data from API:', error);
-    throw error;
-  }
+  // Simulate API delay
+  await new Promise(resolve => setTimeout(resolve, 800));
+  return generateMockStockData(symbol);
 }
 
 export async function fetchHistoricalData(symbol: string, period: '1d' | '1w' | '1m' | '3m' | '1y' | '5y'): Promise<HistoricalDataPoint[]> {
@@ -401,9 +261,61 @@ export async function fetchHistoricalData(symbol: string, period: '1d' | '1w' | 
 }
 
 export async function fetchNewsForStock(symbol: string): Promise<NewsItem[]> {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 1200));
-  return generateNewsItems(symbol, 10);
+  try {
+    // Call Alpha Vantage NEWS_SENTIMENT endpoint
+    const response = await fetch(
+      `https://www.alphavantage.co/query?function=NEWS_SENTIMENT&tickers=${symbol}&apikey=${ALPHA_VANTAGE_API_KEY}`
+    );
+    
+    if (!response.ok) {
+      throw new Error(`API error: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    // Handle case where API returns an error message or no feed
+    if (!data.feed || data.feed.length === 0) {
+      console.warn('No news available from Alpha Vantage for', symbol);
+      return [];
+    }
+    
+    // Map Alpha Vantage response to our NewsItem interface
+    return data.feed.map((item: any, index: number) => {
+      // Determine sentiment based on available data
+      let sentiment: 'positive' | 'negative' | 'neutral' = 'neutral';
+      
+      // If ticker sentiment data is available for this symbol
+      const tickerSentiment = item.ticker_sentiment?.find(
+        (t: any) => t.ticker.toUpperCase() === symbol.toUpperCase()
+      );
+      
+      if (tickerSentiment) {
+        const score = parseFloat(tickerSentiment.ticker_sentiment_score);
+        if (score > 0.25) sentiment = 'positive';
+        else if (score < -0.25) sentiment = 'negative';
+      } else if (item.overall_sentiment_score) {
+        // Fallback to overall sentiment if ticker-specific not available
+        const score = parseFloat(item.overall_sentiment_score);
+        if (score > 0.25) sentiment = 'positive';
+        else if (score < -0.25) sentiment = 'negative';
+      }
+      
+      return {
+        id: `news-${index}-${Date.now()}`,
+        title: item.title,
+        source: item.source,
+        date: item.time_published.substring(0, 10), // Format: YYYYMMDDTHHMMSS -> YYYY-MM-DD
+        snippet: item.summary,
+        url: item.url,
+        sentiment
+      };
+    });
+  } catch (error) {
+    console.error('Error fetching news from Alpha Vantage:', error);
+    // Return empty array or throw error based on your error handling strategy
+    // For now, we'll return empty array to match current behavior
+    return [];
+  }
 }
 
 export async function fetchSentimentAnalysis(symbol: string): Promise<SentimentData> {
