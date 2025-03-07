@@ -273,6 +273,13 @@ export async function fetchNewsForStock(symbol: string): Promise<NewsItem[]> {
     
     const data = await response.json();
     
+    // Check for API limit messages or errors
+    if (data["Information"] || data["Note"]) {
+      console.warn("Alpha Vantage API limit or information:", data["Information"] || data["Note"]);
+      // Fall back to mock data if we hit API limits
+      return generateNewsItems(symbol, 10);
+    }
+    
     // Handle case where API returns an error message or no feed
     if (!data.feed || data.feed.length === 0) {
       console.warn('No news available from Alpha Vantage for', symbol);
@@ -300,21 +307,26 @@ export async function fetchNewsForStock(symbol: string): Promise<NewsItem[]> {
         else if (score < -0.25) sentiment = 'negative';
       }
       
+      // Format date properly (YYYYMMDDTHHMMSS -> YYYY-MM-DD)
+      const dateString = item.time_published || '';
+      const formattedDate = dateString.length >= 8 
+        ? `${dateString.substring(0, 4)}-${dateString.substring(4, 6)}-${dateString.substring(6, 8)}`
+        : new Date().toISOString().split('T')[0];
+      
       return {
         id: `news-${index}-${Date.now()}`,
-        title: item.title,
-        source: item.source,
-        date: item.time_published.substring(0, 10), // Format: YYYYMMDDTHHMMSS -> YYYY-MM-DD
-        snippet: item.summary,
-        url: item.url,
+        title: item.title || `News about ${symbol}`,
+        source: item.source || 'Financial News',
+        date: formattedDate,
+        snippet: item.summary || item.description || 'No description available for this news item.',
+        url: item.url || '#',  // Ensure URL is set properly
         sentiment
       };
     });
   } catch (error) {
     console.error('Error fetching news from Alpha Vantage:', error);
-    // Return empty array or throw error based on your error handling strategy
-    // For now, we'll return empty array to match current behavior
-    return [];
+    // Fall back to mock data on error
+    return generateNewsItems(symbol, 10);
   }
 }
 
