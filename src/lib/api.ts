@@ -260,29 +260,37 @@ function isDataStale(data: CachedStockData): boolean {
 }
 
 export async function fetchStockData(symbol: string): Promise<StockData> {
-  // Always try to get from database first
-  const dbData = await getStockFromDB(symbol);
-  
-  if (dbData) {
-    // If we have data in the database
-    if (isDataStale(dbData)) {
-      // If data is stale, trigger a background refresh but still return cached data
-      console.log('Data is stale, triggering background refresh:', symbol);
-      refreshStockData(symbol, dbData.timestamp).catch(console.error);
-    } else {
-      console.log('Using fresh data from database:', symbol);
-    }
-    return dbData;
-  }
-  
-  // If no data in DB, fetch from API through our backend
-  console.log('No data in database, fetching from API:', symbol);
   try {
+    console.log('Fetching stock data for:', symbol);
+    
+    // First try to get from database
+    const dbData = await getStockFromDB(symbol);
+    console.log('Database data:', dbData);
+    
+    if (dbData) {
+      // If we have data in the database
+      if (isDataStale(dbData)) {
+        // If data is stale, trigger a background refresh but still return cached data
+        console.log('Data is stale, triggering background refresh:', symbol);
+        refreshStockData(symbol, dbData.timestamp).catch(console.error);
+      } else {
+        console.log('Using fresh data from database:', symbol);
+      }
+      return dbData;
+    }
+    
+    // If no data in DB, fetch from API
+    console.log('No data in database, fetching from API:', symbol);
     const response = await fetch(`/api/stocks/fetch/${symbol}`);
     if (!response.ok) {
-      throw new Error('Failed to fetch stock data');
+      throw new Error(`Failed to fetch stock data: ${response.statusText}`);
     }
     const data = await response.json();
+    console.log('API response:', data);
+    
+    // Save the data to MongoDB
+    await saveStockToDB(data);
+    
     return data;
   } catch (error) {
     console.error('Error fetching stock data:', error);
@@ -293,7 +301,11 @@ export async function fetchStockData(symbol: string): Promise<StockData> {
 // Function to refresh stock data in the background
 async function refreshStockData(symbol: string, lastUpdate: number): Promise<void> {
   try {
-    const freshData = await fetchFromAPI(symbol);
+    const response = await fetch(`/api/stocks/fetch/${symbol}`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch stock data');
+    }
+    const freshData = await response.json();
     await saveStockToDB(freshData);
     console.log('Background refresh completed for:', symbol);
   } catch (error) {
