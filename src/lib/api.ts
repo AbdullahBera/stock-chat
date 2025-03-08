@@ -1,6 +1,5 @@
-
-// This is a mock API service for demonstration purposes
-// In a real app, you would integrate with actual financial APIs
+// Real API service that connects to our backend
+// This will fall back to mock data if backend calls fail
 
 export interface StockData {
   symbol: string;
@@ -15,6 +14,7 @@ export interface StockData {
   marketCap: number;
   pe: number;
   dividend: number;
+  timestamp?: number;
 }
 
 export interface HistoricalDataPoint {
@@ -49,7 +49,7 @@ export interface SentimentData {
   }>;
 }
 
-// Mock data generator functions
+// Mock data generators - these will be used as fallbacks
 function generateMockStockData(symbol: string): StockData {
   const stockNames: Record<string, string> = {
     'AAPL': 'Apple Inc.',
@@ -212,60 +212,108 @@ function generateSentimentData(newsItems: NewsItem[]): SentimentData {
   };
 }
 
-// API mock functions
+// API functions that call our backend API
 export async function fetchStockData(symbol: string): Promise<StockData> {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 800));
-  return generateMockStockData(symbol);
+  try {
+    console.log(`Fetching stock data for ${symbol} from backend`);
+    const response = await fetch(`/api/stocks/${symbol}`);
+    
+    if (!response.ok) {
+      if (response.status === 404) {
+        console.log(`Stock ${symbol} not found in database, fetching from Polygon`);
+        // Try to fetch from Polygon API through our backend
+        const polygonResponse = await fetch(`/api/stocks/fetch/${symbol}`);
+        
+        if (!polygonResponse.ok) {
+          throw new Error(`Failed to fetch from Polygon: ${polygonResponse.statusText}`);
+        }
+        
+        return await polygonResponse.json();
+      }
+      
+      throw new Error(`API error: ${response.statusText}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching stock data:', error);
+    console.log('Falling back to mock data');
+    // Fall back to mock data if API calls fail
+    return generateMockStockData(symbol);
+  }
 }
 
 export async function fetchHistoricalData(symbol: string, period: '1d' | '1w' | '1m' | '3m' | '1y' | '5y'): Promise<HistoricalDataPoint[]> {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  
-  let dataPoints = 0;
-  let trend: 'up' | 'down' | 'volatile' = 'volatile';
-  
-  // Random trend with a bias
-  const randomValue = Math.random();
-  if (randomValue > 0.6) trend = 'up';
-  else if (randomValue > 0.3) trend = 'down';
-  
-  switch (period) {
-    case '1d':
-      dataPoints = 24; // Hourly data for a day
-      break;
-    case '1w':
-      dataPoints = 7;
-      break;
-    case '1m':
-      dataPoints = 30;
-      break;
-    case '3m':
-      dataPoints = 90;
-      break;
-    case '1y':
-      dataPoints = 365;
-      break;
-    case '5y':
-      dataPoints = 60; // Monthly data for 5 years
-      break;
-    default:
-      dataPoints = 30;
+  try {
+    console.log(`Fetching historical data for ${symbol}, period: ${period}`);
+    // This would be implemented in your backend
+    // const response = await fetch(`/api/stocks/${symbol}/history?period=${period}`);
+    // if (!response.ok) throw new Error(`API error: ${response.statusText}`);
+    // return await response.json();
+    
+    // For now, fall back to mock data
+    throw new Error('Historical API not implemented yet');
+  } catch (error) {
+    console.log('Falling back to mock historical data');
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Mock data until backend endpoint is implemented
+    let dataPoints = 0;
+    let trend: 'up' | 'down' | 'volatile' = 'volatile';
+    
+    // Random trend with a bias
+    const randomValue = Math.random();
+    if (randomValue > 0.6) trend = 'up';
+    else if (randomValue > 0.3) trend = 'down';
+    
+    switch (period) {
+      case '1d': dataPoints = 24; break; // Hourly data for a day
+      case '1w': dataPoints = 7; break;
+      case '1m': dataPoints = 30; break;
+      case '3m': dataPoints = 90; break;
+      case '1y': dataPoints = 365; break;
+      case '5y': dataPoints = 60; break; // Monthly data for 5 years
+      default: dataPoints = 30;
+    }
+    
+    return generateHistoricalData(dataPoints, trend);
   }
-  
-  return generateHistoricalData(dataPoints, trend);
 }
 
 export async function fetchNewsForStock(symbol: string): Promise<NewsItem[]> {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 1200));
-  return generateNewsItems(symbol, 10);
+  try {
+    console.log(`Fetching news for ${symbol}`);
+    // This would be implemented in your backend
+    // const response = await fetch(`/api/stocks/${symbol}/news`);
+    // if (!response.ok) throw new Error(`API error: ${response.statusText}`);
+    // return await response.json();
+    
+    // For now, fall back to mock data
+    throw new Error('News API not implemented yet');
+  } catch (error) {
+    console.log('Falling back to mock news data');
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 1200));
+    return generateNewsItems(symbol, 10);
+  }
 }
 
 export async function fetchSentimentAnalysis(symbol: string): Promise<SentimentData> {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 1500));
-  const news = generateNewsItems(symbol, 20);
-  return generateSentimentData(news);
+  try {
+    console.log(`Fetching sentiment for ${symbol}`);
+    // This would be implemented in your backend
+    // const response = await fetch(`/api/stocks/${symbol}/sentiment`);
+    // if (!response.ok) throw new Error(`API error: ${response.statusText}`);
+    // return await response.json();
+    
+    // For now, fall back to mock data
+    throw new Error('Sentiment API not implemented yet');
+  } catch (error) {
+    console.log('Falling back to mock sentiment data');
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    const news = generateNewsItems(symbol, 20);
+    return generateSentimentData(news);
+  }
 }

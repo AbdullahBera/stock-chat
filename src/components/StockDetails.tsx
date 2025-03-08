@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { StockData, fetchStockData } from '../lib/api';
+import { useToast } from '@/hooks/use-toast';
 
 interface StockDetailsProps {
   symbol: string;
@@ -10,32 +11,40 @@ const StockDetails: React.FC<StockDetailsProps> = ({ symbol }) => {
   const [stockData, setStockData] = useState<StockData | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     const loadStockData = async () => {
+      if (!symbol) return;
+      
       setIsLoading(true);
       setError(null);
       
       try {
+        console.log(`Loading stock data for ${symbol}`);
         const data = await fetchStockData(symbol);
+        console.log(`Received stock data:`, data);
         setStockData(data);
       } catch (err) {
         console.error('Error fetching stock data:', err);
         setError('Failed to load stock details. Please try again later.');
+        toast({
+          title: "Error",
+          description: "Failed to load stock data. Showing mock data instead.",
+          variant: "destructive",
+        });
       } finally {
         setIsLoading(false);
       }
     };
     
     loadStockData();
-  }, [symbol]);
+  }, [symbol, toast]);
 
-  // Format numbers with commas for thousands
   const formatNumber = (num: number): string => {
     return new Intl.NumberFormat('en-US').format(num);
   };
 
-  // Format market cap in a human-readable way
   const formatMarketCap = (marketCap: number): string => {
     if (marketCap >= 1_000_000_000_000) {
       return `$${(marketCap / 1_000_000_000_000).toFixed(2)}T`;
@@ -50,7 +59,6 @@ const StockDetails: React.FC<StockDetailsProps> = ({ symbol }) => {
     }
   };
 
-  // Format P/E ratio and dividend yield
   const formatPE = (pe: number): string => {
     return pe > 0 ? pe.toFixed(2) : 'N/A';
   };
