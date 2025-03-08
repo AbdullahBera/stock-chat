@@ -364,8 +364,8 @@ async function fetchFromAPI(symbol: string): Promise<StockData> {
 
 export async function fetchHistoricalData(symbol: string, period: '1d' | '1w' | '1m' | '3m' | '1y' | '5y'): Promise<HistoricalDataPoint[]> {
   try {
-    console.log('Fetching historical data for:', symbol, period);
-    const response = await fetch(`/api/stocks/${symbol}/history/${period}`);
+    console.log(`Fetching historical data for ${symbol} with period ${period}`);
+    const response = await fetch(`/api/stocks/${symbol}/history-cached/${period}`);
     
     if (!response.ok) {
       throw new Error('Failed to fetch historical data');
@@ -373,6 +373,11 @@ export async function fetchHistoricalData(symbol: string, period: '1d' | '1w' | 
     
     const data = await response.json();
     console.log(`Received ${data.length} historical data points`);
+    
+    if (!Array.isArray(data)) {
+      throw new Error('Invalid data format received');
+    }
+    
     return data;
   } catch (error) {
     console.error('Error fetching historical data:', error);

@@ -19,6 +19,7 @@ const BASE_URL = 'https://api.polygon.io/v2';
 const POLYGON_API_KEY = process.env.VITE_POLYGON_API_KEY;
 const MONGODB_URI = process.env.MONGODB_URI;
 const MONGODB_DB = process.env.MONGODB_DB || 'stock_data';
+const MAX_CACHE_AGE = 48 * 60 * 60 * 1000; // 48 hours in milliseconds
 
 // Validate required environment variables
 const requiredEnvVars = ['MONGODB_URI', 'VITE_POLYGON_API_KEY'];
@@ -299,6 +300,91 @@ app.get('/api/stocks/:symbol/history/:period', async (req, res) => {
     
     console.log(`Returning ${historicalData.length} historical data points. First point:`, historicalData[0], 'Last point:', historicalData[historicalData.length - 1]);
     res.json(historicalData);
+  } catch (error) {
+    console.error('Error fetching historical data:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch historical data',
+      details: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
+  }
+});
+
+// Add this new endpoint for historical data from MongoDB
+app.get('/api/stocks/:symbol/history-cached/:period', async (req, res) => {
+  console.log('GET /api/stocks/:symbol/history-cached/:period - Fetching cached historical data:', req.params);
+
+  try {
+    const { symbol, period } = req.params;
+    const client = await connectToDatabase();
+    const db = client.db(MONGODB_DB);
+    const collection = db.collection('historical_data');
+
+    // Find the most recent historical data for this symbol and period
+    const historicalData = await collection.findOne(
+      { 
+        symbol, 
+        period,
+        timestamp: { 
+          $gt: new Date(Date.now() - MAX_CACHE_AGE) 
+        }
+      },
+      { sort: { timestamp: -1 } }
+    );
+
+    if (historicalData && historicalData.data) {
+      console.log(`Found cached historical data for ${symbol} (${period}) with ${historicalData.data.length} points`);
+      return res.json(historicalData.data);
+    }
+
+    // If no cached data found or it's too old, fetch from Polygon API
+    console.log('No recent cached data found, fetching from API...');
+    const { from, to, multiplier, timespan } = getTimeRange(period);
+    
+    // Format dates for Polygon API
+    const fromDate = from.toISOString().split('T')[0];
+    const toDate = to.toISOString().split('T')[0];
+    
+    const url = `${BASE_URL}/aggs/ticker/${symbol}/range/${multiplier}/${timespan}/${fromDate}/${toDate}?adjusted=true&sort=asc&limit=50000&apiKey=${POLYGON_API_KEY}`;
+    
+    console.log(`Fetching from Polygon API for ${symbol} from ${fromDate} to ${toDate}`);
+    const response = await fetch(url);
+    const data = await response.json();
+    
+    if (data.status === 'ERROR') {
+      console.error('Polygon API error:', data);
+      return res.status(500).json({ error: data.error || 'API error' });
+    }
+
+    if (!data.results || !Array.isArray(data.results)) {
+      console.error('Invalid or empty response from Polygon API:', data);
+      return res.status(404).json({ error: 'Historical data not found' });
+    }
+    
+    // Transform and format the data
+    const formattedData = data.results.map(item => ({
+      date: new Date(item.t).toISOString(),
+      close: parseFloat(item.c.toFixed(2))
+    }));
+
+    console.log(`Formatted ${formattedData.length} data points for ${symbol}`);
+
+    // Save to MongoDB
+    await collection.updateOne(
+      { symbol, period },
+      { 
+        $set: {
+          symbol,
+          period,
+          data: formattedData,
+          timestamp: new Date()
+        }
+      },
+      { upsert: true }
+    );
+
+    console.log(`Saved historical data to MongoDB for ${symbol} (${period})`);
+    res.json(formattedData);
   } catch (error) {
     console.error('Error fetching historical data:', error);
     res.status(500).json({ 
