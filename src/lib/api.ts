@@ -220,26 +220,41 @@ export async function fetchStockData(symbol: string): Promise<StockData> {
 }
 
 export async function fetchHistoricalData(symbol: string, period: '1d' | '1w' | '1m' | '3m' | '1y' | '5y'): Promise<HistoricalDataPoint[]> {
-  try {
-    console.log(`Fetching historical data for ${symbol} with period ${period}`);
-    const response = await fetch(`/api/stocks/${symbol}/history-cached/${period}`);
-    
-    if (!response.ok) {
-      throw new Error('Failed to fetch historical data');
-    }
-    
-    const data = await response.json();
-    console.log(`Received ${data.length} historical data points`);
-    
-    if (!Array.isArray(data)) {
-      throw new Error('Invalid data format received');
-    }
-    
-    return data;
-  } catch (error) {
-    console.error('Error fetching historical data:', error);
-    throw error;
+  // Simulate API delay
+  await new Promise(resolve => setTimeout(resolve, 1000));
+  
+  let dataPoints = 0;
+  let trend: 'up' | 'down' | 'volatile' = 'volatile';
+  
+  // Random trend with a bias
+  const randomValue = Math.random();
+  if (randomValue > 0.6) trend = 'up';
+  else if (randomValue > 0.3) trend = 'down';
+  
+  switch (period) {
+    case '1d':
+      dataPoints = 24; // Hourly data for a day
+      break;
+    case '1w':
+      dataPoints = 7;
+      break;
+    case '1m':
+      dataPoints = 30;
+      break;
+    case '3m':
+      dataPoints = 90;
+      break;
+    case '1y':
+      dataPoints = 365;
+      break;
+    case '5y':
+      dataPoints = 60; // Monthly data for 5 years
+      break;
+    default:
+      dataPoints = 30;
   }
+  
+  return generateHistoricalData(dataPoints, trend);
 }
 
 export async function fetchNewsForStock(symbol: string): Promise<NewsItem[]> {
